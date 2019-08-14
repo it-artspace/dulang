@@ -2,4 +2,4 @@ API = API/builtin.c API/dulbool.c API/rangeobject.c API/classobject.c API/funcob
 PARSER = PARSER/ast.c PARSER/parser.c PARSER/asttobyc.c PARSER/parse.c PARSER/testparser.c
 RE = RE/context.c RE/dulthread.c RE/std_linkage.c
 all:
-	cc ${API} ${PARSER} ${RE} main.c -o ~/Dulang/dulang
+	cc ${API} ${PARSER} ${RE} main.c buildscript.c -o ~/Dulang/dulang
