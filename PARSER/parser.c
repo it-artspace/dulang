@@ -127,7 +127,7 @@ int get_string(dulparser*p){
 	}
 	
 	char	buf2[ 4096 ];
-	char*	write = buf2;
+	char*	writer = buf2;
 	char*	read  = buf;
 	int		pos   = 0;
 	
@@ -140,17 +140,17 @@ int get_string(dulparser*p){
 			int  spaces   = 4 - reminder;
 			for( int i = 0; i < spaces; i ++ )
 			{
-				*write ++ = ' ';
+				*writer ++ = ' ';
 				pos ++;
 			}
 		}
 		else
 		{
-			*write ++ = ch;
+			*writer ++ = ch;
 			pos ++;
 		}
 	}
-	*write = 0;
+	*writer = 0;
 	strcpy( p->curstring, buf2 );
 
 	if( p->line_no >= p->lines_capacity )

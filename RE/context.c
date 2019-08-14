@@ -38,7 +38,7 @@ int exec_context(context*ctx){
         case load_static:
             *ctx->stackptr++ = ctx->co_static->statics[_op->arg];
             break;
-        case write:
+        case _write:
             do{
                 object* sttop = *--ctx->stackptr;
                 if(!sttop){

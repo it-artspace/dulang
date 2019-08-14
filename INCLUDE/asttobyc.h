@@ -39,7 +39,7 @@ enum opcodes {
     invoke,
     unpack_iter,
     doasync,
-    write,
+    _write,
     invoke_method,
     push_null,
     funcdef,

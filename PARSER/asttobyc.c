@@ -422,7 +422,7 @@ void write_node(funcobject* writer, astnode*node){
             break;
         case WRITE:
             write_node(writer, node->children[0]);
-            write_op(writer, write, 0);
+            write_op(writer, _write, 0);
             break;
         case NULL_:
             write_op(writer, push_null, 1);
