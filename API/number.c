@@ -14,6 +14,13 @@ char num_lt(const object*left, const object*right){
     return f->val < s->val;
 }
 
+char num_eq(const object* left, const object*right){
+    if(!right)
+        return 0;
+    if(strcmp(right->type->name, "number")!=0)
+        return 0;
+    return ((dulnumber*)left)->val == ((dulnumber*)right)->val;
+}
 
 
 const struct obtype NUMTYPE = {
@@ -31,7 +38,7 @@ const struct obtype NUMTYPE = {
     0, // /=
     &num_lt, // <
     0, // >
-    0, // ==
+    &num_eq, // ==
     0, // <=
     0, // >=
     0, // f()
