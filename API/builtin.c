@@ -46,7 +46,10 @@ object* __bin_typeof    (binarg Args, struct _crt * coro){
         }
         return _mktuple(res_arr + Args.a_passed, Args.a_passed);
     }
-    return strfromchar((*Args.aptr)->type->name);
+    if(*Args.aptr)
+        return strfromchar((*Args.aptr)->type->name);
+    else
+        return strfromchar("null");
 }
 
 
@@ -64,7 +67,7 @@ object* __bin_range(binarg Args, struct _crt* coro){
             r->start = 0;
             r->step = 1;
             r->end = ((dulnumber*)o)->val;
-            return r;
+            return (object*)r;
         } break;
         case 2:{
             object* o_start = Args.aptr[0];
@@ -83,7 +86,7 @@ object* __bin_range(binarg Args, struct _crt* coro){
             r->start = ((dulnumber*)o_start)->val;
             r->step = 1;
             r->end = ((dulnumber*)o_end)->val;
-            return r;
+            return (object*)r;
         } break;
         default:{
             fprintf(stderr, "range func takes 1-2 args but %d were given", Args.a_passed);
@@ -183,5 +186,18 @@ object* __bin_object(binarg Args, struct _crt*coro){
 }
 
 
-
+object* __bin_str       (binarg Args, struct _crt *_){
+    if(Args.a_passed != 1){
+        fprintf(stderr, "in function str 1 argument expected but %d passed", Args.a_passed);
+        return 0;
+    }
+    object* arg = *Args.aptr;
+    if(!arg){
+        return strfromchar("");
+    }
+    char* argdump = arg->type->dump(arg);
+    object*s = strfromchar(argdump);
+    free(argdump);
+    return s;
+}
 

@@ -297,8 +297,6 @@ int exec_context(context*ctx){
             
         }break;
         case push_null:
-            *ctx->stackptr = 0;
-            ctx->stackptr++;
             break;
         case op_lt:{
             object* right = *--ctx->stackptr;
@@ -359,6 +357,7 @@ int exec_context(context*ctx){
             ctx->vars[prev_op->arg] = mod;
             
         } break;
+        
         default:
             break;
     }

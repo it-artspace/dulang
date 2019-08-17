@@ -9,6 +9,8 @@
 
 #include "../api.h"
 void ob_dealloc(object*ob){
-    ob->type->dealloc(ob);
-    free(ob);
+    if(ob->type->dealloc){
+        ob->type->dealloc(ob);
+        free(ob);
+    }
 }

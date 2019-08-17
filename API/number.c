@@ -8,19 +8,20 @@
 
 #include "../api.h"
 
-char num_lt(const object*left, const object*right){
+char num_lt(object*left, object*right){
     dulnumber*f = (dulnumber*)left;
     dulnumber*s = (dulnumber*)right;
     return f->val < s->val;
 }
 
-char num_eq(const object* left, const object*right){
+char num_eq(object* left, object*right){
     if(!right)
         return 0;
     if(strcmp(right->type->name, "number")!=0)
         return 0;
     return ((dulnumber*)left)->val == ((dulnumber*)right)->val;
 }
+
 
 
 const struct obtype NUMTYPE = {

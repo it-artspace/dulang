@@ -37,8 +37,106 @@ char eq_str(object*left, object*right){
     }
 }
 
+object* str_subscr_get(object* s, int i){
+    //s is guaranteed to be string
+    dulstring* self = (dulstring*)s;
+    if(i<0)
+        i+= self->len;
+    if(i < 0 || i > self->len){
+        return 0;
+    }
+    char* newsrc = strndup(self->content+i, 1);
+    dulstring* newstr = (dulstring*)strfromchar(newsrc);
+    free(newsrc);
+    return (object*)newstr;
+}
 
+void str_subscr_set(object*s, int i, object*c){
+    if(strcmp(c->type->name, "string")!=0){
+#warning TODO: exception
+        return;
+    }
+    dulstring* to_insert = (dulstring*)c;
+    if(to_insert->len != 1){
+        //dafuq?
+        return;
+    }
+    dulstring*self = (dulstring*)s;
+    if(i < 0)
+        i+=self->len;
+    if(i < 0 || i > self->len){
+        return;
+    }
+    self->content[i] = to_insert->content[0];
+}
 
+typedef struct {
+    ObHead
+    dulstring*coll;
+    int pos;
+} striter;
+object* str_iter_next   (object*);
+object* unpack_str_iter (object*);
+const struct obtype STRITERTYPE = {
+    "string iterator",
+    0, //dump
+    0, //alloc
+    0, //dealloc
+    0, //+
+    0, //-
+    0, // *
+    0, // /
+    0, // +=
+    0, // -=
+    0, // *=
+    0, // /=
+    0, // <
+    0, // >
+    0, // ==
+    0, // <=
+    0, // >=
+    0, // f()
+    0, // a in b
+    0, //init_iter (collection initializes iter)
+    &str_iter_next, //next_iter
+    0, // [0]
+    0, // [0] =
+    0, // [""]
+    0, // [""] =
+    0, // tostr
+    0, //copy
+    &unpack_str_iter,  //unpack,
+    0, //invoke (deprecated)
+    0, //typeid
+    1, // methodnum
+    0//methodarray
+};
+
+object* init_str_iter(const object*s){
+    dulstring*self = (dulstring*)s;
+    striter* new_iter = malloc(sizeof(striter));
+    new_iter->type = &STRITERTYPE;
+    new_iter->refcnt = 1;
+    new_iter->coll = self;
+    new_iter->pos = 0;
+    return (object*)new_iter;
+}
+
+object* str_iter_next   (object*s){
+    striter* self = (striter*)s;
+    self->pos++;
+    if(self->pos >= self->coll->len){
+        free(self);
+        return 0;
+    }
+    
+    return (object*)self;
+}
+
+object* unpack_str_iter (object*i){
+    striter*self = (striter*)i;
+    return str_subscr_get((object*)self->coll, self->pos);
+}
 
 const struct obtype STRTYPE = {
     "string",
@@ -60,10 +158,10 @@ const struct obtype STRTYPE = {
     0, // >=
     0, // f()
     0, // a in b
-    0, //init_iter (collection initializes iter)
+    &init_str_iter, //init_iter (collection initializes iter)
     0, //next_iter
-    0, // [0]
-    0, // [0] =
+    &str_subscr_get, // [0]
+    &str_subscr_set, // [0] =
     0, // [""]
     0, // [""] =
     0, // tostr
@@ -136,3 +234,5 @@ object* getSubstring(object*str, int posstart, int posend){
     nst->content = ((dulstring*)str)->content + posstart;
     return (object*)nst;
 }
+
+

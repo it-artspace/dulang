@@ -42,7 +42,7 @@ struct obtype{
     object*     (*minus_op)     ( object*,  object*);
     object*     (*mult_op)      ( object*,  object*);
     object*     (*div_op)       ( object*,  object*);
-    void        (*inpadd)       (object*,  object*);
+    void        (*inpadd)       (object**,  object*);
     void        (*inpsub)       (object*,  object*);
     void        (*inpmult)      (object*,  object*);
     void        (*inpdiv)       (object*,  object*);

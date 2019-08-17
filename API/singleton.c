@@ -36,6 +36,9 @@ object* ob_subscr_get   (const object*self, const char*name){
 void ob_subscr_set(object*self, const char*name, object*target){
     INCREF(target);
     single_ob* table = (single_ob*)self;
+    if(table->count *2 >= table->cap){
+        table = realloc(table, sizeof(single_ob) + sizeof(object*)*(table->cap*=2));
+    }
     unsigned int index = hashstr(name) % table->cap;
     
     while(strcmp(name, table->content[index].name) != 0){
@@ -49,31 +52,10 @@ void ob_subscr_set(object*self, const char*name, object*target){
     table->content[index].member = target;
     table->content[index].is_valid = 0;
     strcpy(table->content[index].name, name);
+    table->count++;
 }
 
-/*object* ob_method_call  (object*self, const char*name, object*args, context*ctx){
-    object* method = ob_subscr_get(self, name);
-    if(strcmp(method->type->name, "functional object") != 0){
-        fprintf(stderr, "object does not have such method: %s\n", name);
-        return 0;
-    }
-    funcobject* r_func_arg = (funcobject*)method;
-    context* c = init_context(r_func_arg);
- ;
-    c->return_to = ctx;
-    int this_pos = -1;
-    for(int i = 0; i<r_func_arg->namecount; ++i){
-        if(strcmp("this", r_func_arg->varnames[i]) == 0)
-            this_pos = i;
-    }
-   
-    if(this_pos!=-1)
-    c->vars[this_pos] = self;
-    while(c->current_op < c->stop_op)
-        exec_context(c);
-    return *ctx->stackptr[-1]; //memory leak! contexts are to be properly GC
-    
-}*/
+
 
 const struct obtype SINOBTYPE = {
     "object",

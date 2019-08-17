@@ -39,9 +39,16 @@ const builtin_func typeof_ = {
     &__bin_typeof
 };
 
+const builtin_func str_ = {
+    &BINTYPE,
+    1,
+    "str",
+    &__bin_str
+};
 
-const builtin_func *bins[] = {&dump, &typeof_, &range, &obj};
-const int bin_count = 4;
+
+const builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_};
+const int bin_count = 5;
 
 void eval_std (context*ctx){
     for(int i = 0; i<ctx->co_static->namecount; ++i){

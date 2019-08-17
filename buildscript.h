@@ -14,5 +14,5 @@
 
 void execute_command(char* cmd);
 object* getmodule(char* name);
-
+void init_mods(void);
 #endif /* buildscript_h */

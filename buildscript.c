@@ -17,14 +17,11 @@
 static const char * build_dir = "/Users/jernicozz/Documents/Niolang/build";
 //first place to lookup files with non-absolute path
 
-static struct {
-    struct mod{
-        char name [20];
-        object* modobj;
-    } modules [100];
-    int count;
-} mods;
+static object* mods;
 
+void init_mods(){
+    mods = new_ob();
+}
 
 int cmd_count = 4;
 const char * cmds [] = {
@@ -47,10 +44,9 @@ void import_module(char*fname){
     fgets(rdbuf, 1024, f);
     strtok(rdbuf, "\n");
     //we have read the name
-    struct mod newmodule;
-    strcpy(newmodule.name, rdbuf);
+    
+    char* modname = strdup(rdbuf);
     fprintf(output, "importing module %s...\n\n", rdbuf);
-    newmodule.modobj = (object*)obj;
     fgets(rdbuf, 1024, f);
     strtok(rdbuf, "\n");
     void* lib = dlopen(rdbuf, RTLD_LAZY);
@@ -60,7 +56,7 @@ void import_module(char*fname){
     while(fscanf(f, "%s", rdbuf)==1){
         binfptr fp = dlsym(lib, rdbuf);
         if(!fp){
-            fprintf(stderr, "cannot find %s function in module %s, aborting", rdbuf, newmodule.name);
+            fprintf(stderr, "cannot find %s function in module %s, aborting", rdbuf, modname);
             return;
         }
         builtin_func* to_enplace = (builtin_func*)malloc(sizeof(builtin_func));
@@ -70,13 +66,7 @@ void import_module(char*fname){
         to_enplace->name = strdup(rdbuf);
         ob_subscr_set((object*)obj, rdbuf, (object*)to_enplace);
     }
-    for(int i = 0; i<mods.count; ++i){
-        if(strcmp(mods.modules[i].name, newmodule.name)==0){
-            mods.modules[i].modobj = (object*)obj;
-            return;
-        }
-    }
-    mods.modules[mods.count++] = newmodule;
+    ob_subscr_set(mods, modname, (object*)obj);
     
 }
 
@@ -97,16 +87,8 @@ void launch_file(char*fname){
     for(int i = 0; i<f->namecount; ++i){
         ob_subscr_set(obj, f->varnames[i], vars[i]);
     }
-    struct mod newmodule;
-    newmodule.modobj = obj;
-    strncpy(newmodule.name, bname, 20);
-    for(int i = 0; i<mods.count; ++i){
-        if(strcmp(mods.modules[i].name, newmodule.name)==0){
-            mods.modules[i].modobj = (object*)obj;
-            return;
-        }
-    }
-    mods.modules[mods.count++] = newmodule;
+    char* modname = strdup(bname);
+    ob_subscr_set(mods, modname, obj);
     
 }
 
@@ -150,10 +132,5 @@ void execute_command(char* command){
 
 
 object* getmodule(char*name){
-    for(int i = 0; i<mods.count; ++i){
-        if(strcmp(mods.modules[i].name, name)==0){
-            return mods.modules[i].modobj;
-        }
-    }
-    return 0;
+    return ob_subscr_get(mods, name);
 }

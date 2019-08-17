@@ -10,7 +10,7 @@
 #define context_h
 
 #include "../api.h"
-#define use_writer 0
+#define use_writer 1
 struct thread;
 struct w;
 struct _crt;

@@ -18,7 +18,7 @@
 #include "buildscript.h"
 
 FILE* output = 0;
-
+#define addr argv[1]
 
 
 
@@ -31,14 +31,15 @@ int exec( char* inpuf )
 }
 
 int main(int argc, const char * argv[]) {
-    
+    init_mods();
 #if socket_runner
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un servaddr;
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sun_family = AF_UNIX;
-    strcpy(servaddr.sun_path, "/Users/jernicozz/Documents/dulang.vm");
-    unlink("/Users/jernicozz/Documents/dulang.vm");
+    strcpy(servaddr.sun_path, addr);
+    unlink(addr);
+    printf("serving %s\n", addr);
     bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
     listen(sockfd, 10);
     while(1){
@@ -47,7 +48,7 @@ int main(int argc, const char * argv[]) {
         output = f_bound;
         char script_buf [1024];
         while(fgets(script_buf, 1024, f_bound)){
-            printf(script_buf);
+            printf("%s",script_buf);
             exec(script_buf);
             fprintf(output, "--end--");
             fflush(output);

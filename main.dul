@@ -1,5 +1,1 @@
-for i in range(10)
-	if i == 7
-		write "i is 7"
-	else
-		write i
+write "hello world"
