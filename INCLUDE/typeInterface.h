@@ -38,39 +38,34 @@ struct obtype{
     char* (*dump)(object*);
     object*     (*allocate)     (void);
     void        (*dealloc)      (object*self);
-    object*     (*plus_op)      ( object*,  object*);
-    object*     (*minus_op)     ( object*,  object*);
-    object*     (*mult_op)      ( object*,  object*);
-    object*     (*div_op)       ( object*,  object*);
+    object*     (*plus_op)      (object*,  object*);
+    object*     (*minus_op)     (object*,  object*);
+    object*     (*mult_op)      (object*,  object*);
+    object*     (*div_op)       (object*,  object*);
     void        (*inpadd)       (object**,  object*);
     void        (*inpsub)       (object*,  object*);
     void        (*inpmult)      (object*,  object*);
     void        (*inpdiv)       (object*,  object*);
-    char        (*lt)           ( object*,  object*);
-    char        (*gt)           ( object*,  object*);
-    char        (*eq)           ( object*,  object*);
-    char        (*lequal)       ( object*,  object*);
-    char        (*gequal)       ( object*,  object*);
-    object*     (*invoke)       ( object*, object* Args);
+    char        (*lt)           (object*,  object*);
+    char        (*gt)           (object*,  object*);
+    char        (*eq)           (object*,  object*);
+    char        (*lequal)       (object*,  object*);
+    char        (*gequal)       (object*,  object*);
+    object*     (*invoke)       (object*, object* Args);
     //a in b -> contains(b, a)
-    char        (*contains)     ( object*,  object*);
-    object*     (*init_iter)    ( object*);
+    char        (*contains)     (object*,  object*);
+    object*     (*init_iter)    (object*);
     //returns iter, null on end
     object*     (*iter_next)    (object*);
-    object*     (*subscript_get)( object*, int);
+    object*     (*subscript_get)(object*, int);
     void        (*subscript_set)(object*, int, object*);
-    object*     (*strsubscr_get)( object*,  char*);
+    object*     (*strsubscr_get)(object*,  char*);
     void        (*strsubscr_set)(object*,  char*, object*);
-    object*     (*tostr)        ( object*);
-    object*     (*copy)         ( object*);
-    object*     (*unpack_iter)  ( object*);
-    object*     (*method_invoke)(object*,  char*, object*);
+    object*     (*tostr)        (object*);
+    object*     (*copy)         (object*);
+    object*     (*unpack_iter)  (object*);
     int type_id; //for fast type-checks
-    int method_num;
-    struct _m{
-        bin_method_func fptr;
-        char name [20];
-    } * methods;
+    object*     (*get_methods)  (void);
     
     //returs pointer that needs to be freed after use
 	
@@ -78,7 +73,7 @@ struct obtype{
     
 };
 
-void assert_type(object*self,  char*type_name,  char*op);
+
 
 
 

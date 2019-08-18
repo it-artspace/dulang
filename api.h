@@ -18,7 +18,6 @@
 #include "INCLUDE/classobject.h"
 #include "INCLUDE/builtin.h"
 #include "INCLUDE/dulbool.h"
-#include "INCLUDE/dularr.h"
 #include "INCLUDE/ast.h"
 #include "INCLUDE/lexem.h"
 #include "INCLUDE/parser.h"
@@ -28,5 +27,6 @@
 #include "INCLUDE/rangeobject.h"
 #include "INCLUDE/number.h"
 #include "debuginfo.h"
-#include "INCLUDE/testparser.h"
+#include "INCLUDE/array.h"
+#include "INCLUDE/channel.h"
 #endif /* api_h */

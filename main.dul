@@ -1,1 +1,1 @@
-write "hello world"
+write ("abcd" + "efg").length()

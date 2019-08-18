@@ -9,6 +9,40 @@
 #include "../api.h"
 #define STRCAP 15
 
+object* str_len   (object* self, binarg Args){
+    if(Args.a_passed > 0){
+        fprintf(stderr, "expected 0 arguments in len method but %d passed", Args.a_passed);
+        return 0;
+    }
+    return numfromdouble(((dulstring*)self)->len);
+}
+
+
+static struct {
+    const char* name;
+    bin_method m;
+} string_methods [] = {{
+    "length",
+    {
+        &BINTYPE,
+        1,
+        &str_len
+    }
+}};
+static int str_methods_count = 1;
+
+object* get_str_methods(void){
+    static object * methods;
+    if(methods == 0){
+        methods = new_ob();
+        for(int i = 0; i<str_methods_count; ++i){
+            ob_subscr_set(methods, string_methods[i].name, (object*)&string_methods[i].m);
+        }
+    }
+    return methods;
+}
+
+
 object* getsubstr_method_wrapper(object*self, object*Args){
     if(strcmp(Args->type->name, "tuple") == 0){
         
@@ -106,10 +140,8 @@ const struct obtype STRITERTYPE = {
     0, // tostr
     0, //copy
     &unpack_str_iter,  //unpack,
-    0, //invoke (deprecated)
     0, //typeid
-    1, // methodnum
-    0//methodarray
+    
 };
 
 object* init_str_iter(const object*s){
@@ -167,10 +199,8 @@ const struct obtype STRTYPE = {
     0, // tostr
     0, //copy
     0,  //unpack,
-    0, //invoke (deprecated)
-    number_id, //typeid
-    1, // methodnum
-    0//methodarray
+    string_id, //typeid
+    &get_str_methods// method
 };
 
 char* dumpstr(object*self){

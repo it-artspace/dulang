@@ -39,8 +39,6 @@ const struct obtype RANGEITERTYPE = {
     &unpack_range_iter,  //unpack,
     0, //invoke (deprecated)
     -1, //typeid
-    0, // methodnum
-    0 //methodarray
 };
 
 const struct obtype RANGEOBJECTTYPE = {

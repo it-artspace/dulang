@@ -218,7 +218,7 @@ int exec_context(context*ctx){
             object* self = *--ctx->stackptr;
             object* method_name = *--ctx->stackptr;
             //object* arg = *--ctx->stackptr;
-            if(self->type->method_invoke == 0){
+            if(self->type->get_methods == 0){
                 //try to get as member
                 if(strcmp(method_name->type->name, "string")==0){
                     dulstring* s = (dulstring*)method_name;
@@ -253,7 +253,16 @@ int exec_context(context*ctx){
                     fprintf(stderr, "cannot invoke method of not string type: %s\n", method_name->type->name);
                 }
             } else {
-                
+                if(method_name->type->type_id != string_id){
+                    fprintf(stderr, "cannot invoke method of expression type %s", method_name->type->name);
+                    break;
+                }
+                binarg a;
+                a.a_passed = _op->arg;
+                a.aptr = ctx->stackptr -= a.a_passed;
+                dulstring* m_name_casted = (dulstring*)method_name;
+                bin_method* bin_method_ = (bin_method*)ob_subscr_get(self->type->get_methods(), m_name_casted->content);
+                *ctx->stackptr++ = bin_method_->func_pointer(self, a);
             }
             
             

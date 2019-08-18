@@ -57,10 +57,8 @@ void tuple_sub_set(object*self, int pos, object*val){
 
 
 
-const struct _m tuple_map = {
-    &__bin_tuple_map,
-    "map"
-};
+
+
 
 
 const struct obtype BUNDLETYPE = {
