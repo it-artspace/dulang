@@ -37,7 +37,7 @@ const struct obtype RANGEITERTYPE = {
     0, // tostr
     0, //copy
     &unpack_range_iter,  //unpack,
-    0, //invoke (deprecated)
+
     -1, //typeid
 };
 

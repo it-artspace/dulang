@@ -46,9 +46,16 @@ const builtin_func str_ = {
     &__bin_str
 };
 
+const builtin_func chan_ = {
+    &BINTYPE,
+    1,
+    "channel",
+    &new_channel
+};
 
-const builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_};
-const int bin_count = 5;
+
+const builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_};
+const int bin_count = 6;
 
 void eval_std (context*ctx){
     for(int i = 0; i<ctx->co_static->namecount; ++i){

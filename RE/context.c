@@ -24,7 +24,7 @@ int exec_context(context*ctx){
             if(ctx->vars[_op->arg])
                 DECREF(ctx->vars[_op->arg]);
             ctx->vars[_op->arg] = *--ctx->stackptr;
-            ctx->vars[_op->arg]->refcnt++;
+            INCREF(ctx->vars[_op->arg]);
             
 #if print_opcode_run
             char* dumpvar = ctx->vars[_op->arg]->type->dump(ctx->vars[_op->arg]);

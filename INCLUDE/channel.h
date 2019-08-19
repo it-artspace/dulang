@@ -18,6 +18,7 @@ typedef struct {
     object * receive_callback;
 } dulchannel;
 
-object* new_channel(void);
-
+BIN_DECL(new_channel);
+extern const struct obtype CHANTYPE;
+object * get_chan_methods(void);
 #endif /* channel_h */

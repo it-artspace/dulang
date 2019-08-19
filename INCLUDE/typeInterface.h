@@ -31,7 +31,6 @@ enum type_ids {
 struct _crt;
 typedef struct {object **aptr; int a_passed;} binarg;
 
-typedef object* (*bin_method_func)(object*self, binarg Args, struct _crt * coro);
 
 struct obtype{
      char  *name;

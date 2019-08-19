@@ -357,7 +357,12 @@ void write_node(funcobject* writer, astnode*node){
             if(node->children[0]->type == SUBSCR){
                 write_node(writer, node->children[0]->children[1]);
                 write_node(writer, node->children[0]->children[0]);
-                write_op(writer, invoke_method, node->children[1]->children_count);
+                int argc = 1;
+                if(node->children[1]->type == NULL_)
+                    argc = 0;
+                if(node->children[1]->type == MKTUPLE)
+                    argc = node->children[1]->children_count;
+                write_op(writer, invoke_method, argc);
             } else {
                 //write_node(writer, node->children[1]);
                 write_node(writer, node->children[0]);
