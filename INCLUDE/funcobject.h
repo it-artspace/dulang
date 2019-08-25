@@ -46,4 +46,5 @@ void fsetup(funcobject*);
 void include_standard(funcobject*); //aka module-setup
 object* invoke_lambda(funcobject*, object*_this);
 extern const char *opcode_repres_ [];
+extern const struct obtype FUNCTYPE;
 #endif /* funcobject_h */

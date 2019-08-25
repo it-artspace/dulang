@@ -48,8 +48,11 @@ char*		_lexem_names[ ] = {
 	"kwclass",
 	"kwasync",
 	"kwwrite",
+    "kwimport",
+    "kwobject",
     "kwin",
     "kwreturn",
+    "while",
 	"indent",
 	"dedent"
 };
@@ -119,12 +122,20 @@ dulparser* open_parser(const char*fname){
 int get_string(dulparser*p){
 	char	buf[ 1024 ];
 	char*	begin;
+    char *comment_checker;
+    do{
+        
+        begin = fgets( buf, 1024, p->inp);
+        if( begin == 0) {
+            p->curstring = NULL;
+            return 1;
+        }
+        comment_checker = begin;
+        while(*comment_checker==' ' || *comment_checker=='\t')
+            comment_checker++;
+    } while(comment_checker[0]=='#');
 	
-	begin = fgets( buf, 1024, p->inp);
-	if( begin == 0) {
-		p->curstring = NULL;
-		return 1;
-	}
+   
 	
 	char	buf2[ 4096 ];
 	char*	writer = buf2;
@@ -238,7 +249,7 @@ enum lexemtype getlexem(dulparser*p){
 			}
         p->strpos++;
         int size = p->strpos-strstart-2;
-		clexem->literal = (char*)malloc( size );
+		clexem->literal = (char*)dulalloc( size );
 		strncpy(clexem->literal, p->curstring + strstart+1, p->strpos-strstart-2);
         ((char*)clexem->literal)[size] = '\0';
 		clexem->t = STRLNGLITERAL;
@@ -283,7 +294,7 @@ enum lexemtype getlexem(dulparser*p){
 		numsym++;
 	if(numsym!=0){
 		//is identifier
-		clexem->literal = (char*)malloc(numsym+1);
+		clexem->literal = (char*)dulalloc(numsym+1);
 		strncpy(clexem->literal, p->curstring+p->strpos, numsym);
         clexem->literal[numsym] = 0;
 		clexem->t = IDENTIFIER;

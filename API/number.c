@@ -22,6 +22,22 @@ char num_eq(object* left, object*right){
     return ((dulnumber*)left)->val == ((dulnumber*)right)->val;
 }
 
+object * num_iadd(object * left, object * right){
+    if(right->type->type_id != number_id){
+        return 0;
+    }
+    dulnumber * l = (dulnumber*)left;
+    dulnumber * r = (dulnumber*)right;
+    if(l->refcnt > 1){
+        double v = l->val;
+        l = ob_alloc(sizeof(dulnumber));
+        l->type = &NUMTYPE;
+        l->refcnt = 0;
+        l->val = v;
+    }
+    l->val += r->val;
+    return (object*)l;
+}
 
 
 const struct obtype NUMTYPE = {
@@ -33,7 +49,7 @@ const struct obtype NUMTYPE = {
     &numminus, //-
     &nummult, // *
     &numdiv, // /
-    0, // +=
+    &num_iadd, // +=
     0, // -=
     0, // *=
     0, // /=
@@ -48,38 +64,34 @@ const struct obtype NUMTYPE = {
     0, //next_iter
     0, // [0]
     0, // [0] =
-    0, // [""]
-    0, // [""] =
     0, // tostr
     0, //copy
     0,  //unpack,
-    0, //invoke (deprecated)
     number_id, //typeid
-    1, // methodnum
-    0//methodarray
+   
 };
 
 object* numfromdouble(double val){
-    dulnumber* newnum = (dulnumber*)malloc(sizeof(dulnumber));
-    newnum->refcnt = 1;
+    dulnumber* newnum = (dulnumber*)ob_alloc(sizeof(dulnumber));
+    newnum->refcnt = 0;
     newnum->val = val;
     newnum->type = &NUMTYPE;
     return (object*)newnum;
 }
 
 char* dumpnumber(object* num){
-    char*nstr = (char*)malloc(100);
+    char*nstr = (char*)dulalloc(100);
     sprintf(nstr, "%lf", ((dulnumber*)num)->val);
     return nstr;
 }
 void num_dealloc(object*o){}
 
 object* numplus(object*left, object*right){
-    if(strcmp(right->type->name, "number")!=0){
+    if(!right || right->type->type_id!=number_id){
         fprintf(stderr, "invalid right operand type: %s, but number expected\n", right->type->name);
         return 0;
     }
-    dulnumber* res = (dulnumber*)malloc(sizeof(dulnumber));
+    dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
     res->val = ((dulnumber*)left)->val + ((dulnumber*)right)->val;
@@ -87,11 +99,11 @@ object* numplus(object*left, object*right){
 }
 
 object* numminus(object*left, object*right){
-    if(strcmp(right->type->name, "number")!=0){
+    if(!right || right->type->type_id!=number_id){
         fprintf(stderr, "invalid right operand type: %s, but number expected\n", right->type->name);
         return 0;
     }
-    dulnumber* res = (dulnumber*)malloc(sizeof(dulnumber));
+    dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
     res->val = ((dulnumber*)left)->val - ((dulnumber*)right)->val;
@@ -103,7 +115,7 @@ object* nummult(object*left, object*right){
         fprintf(stderr, "invalid right operand type: %s, but number expected\n", right->type->name);
         return 0;
     }
-    dulnumber* res = (dulnumber*)malloc(sizeof(dulnumber));
+    dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
     res->val = ((dulnumber*)left)->val * ((dulnumber*)right)->val;
@@ -115,7 +127,7 @@ object* numdiv(object*left, object*right){
         fprintf(stderr, "invalid right operand type: %s, but number expected\n", right->type->name);
         return 0;
     }
-    dulnumber* res = (dulnumber*)malloc(sizeof(dulnumber));
+    dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
     res->val = ((dulnumber*)left)->val / ((dulnumber*)right)->val;

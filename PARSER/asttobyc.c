@@ -10,6 +10,7 @@
 #include "../api.h"
 #include "../INCLUDE/dulthread.h"
 #include "../debuginfo.h"
+#include <libgen.h>
 
 int nametable_lookup( funcobject* writer, char* name ){
     for(int i = 0; i<writer->namecount; ++i){
@@ -84,7 +85,7 @@ funcobject* load_file(const char* fname){
         for(int i = 0; i<root->children_count; ++i)
             write_node(module, root->children[i]);
     }
-    write_op(module, push_null, 0);
+    write_op(module, pack_module, 0);
     astnode_delete(root);
     return module;
 }
@@ -96,7 +97,15 @@ void load_func_process_storenames( astnode* current, funcobject* currfunc, funco
     {
         char* name = (char*) current->val;
         int found_val = find_name_recursively( outerfunc, name );
-        if( found_val )
+        int is_reserved = 0;
+        for(int i = 0; i<bin_count; ++i){
+            if(strcmp(bins[i]->name, name)==0){
+                is_reserved = 1;
+                break;
+            }
+        }
+        int is_this = !strcmp(name, "this");
+        if( found_val && !is_reserved && !is_this)
         {
             // Generate prologue for captured variables
             int  lookup_index = nametable_lookup( currfunc, name);
@@ -181,7 +190,7 @@ void extract_names(funcobject*writer, astnode*node){
             }
             
             add_name(writer, iter_name);
-            free(iter_name);
+            //free(iter_name);
         }
         for(int i = 0; i<node->children_count; ++i){
             astnode* child = node->children[i];
@@ -236,9 +245,10 @@ void write_for(funcobject*writer, astnode*node){
     
     char* iter_name;
     if(node->children[0]->children[0]->type == NAME){
-        iter_name= (char*)malloc(strlen((char*)node->children[0]->children[0]->val)+6);
-        strcpy(iter_name, (char*)node->children[0]->children[0]->val);
-        strcpy(iter_name+ strlen((char*)node->children[0]->children[0]->val), "_iter$" );
+        char * name_wo_mangle = (char*)node->children[0]->children[0]->val;
+        iter_name= (char*)malloc(strlen(name_wo_mangle)+6);
+        strcpy(iter_name, name_wo_mangle);
+        strcat(iter_name, "_iter$" );
     } else {
         iter_name = strdup("_iter$");
     }
@@ -258,7 +268,7 @@ void write_for(funcobject*writer, astnode*node){
     write_op(writer, iter_next, iter_name_pos);
     write_op(writer, jump, ret_pos - writer->opcount - 1);
     writer->byteops[ret_pos].arg =writer->opcount - ret_pos - 1;
-    free(iter_name);
+    //free(iter_name);
 }
 
 
@@ -425,10 +435,18 @@ void write_node(funcobject* writer, astnode*node){
             }
             write_op(writer, mktuple, node->children_count);
             break;
-        case WRITE:
-            write_node(writer, node->children[0]);
-            write_op(writer, _write, 0);
-            break;
+        case WRITE:{
+            int argc = 1;
+            if(node->children[0]->type == MKTUPLE){
+                argc = node->children[0]->children_count;
+                for(int i = 0; i<argc; ++i){
+                    write_node(writer, node->children[0]->children[i]);
+                }
+            } else {
+                 write_node(writer, node->children[0]);
+            }
+            write_op(writer, _write, argc);
+        }break;
         case NULL_:
             write_op(writer, push_null, 1);
             break;
@@ -453,8 +471,20 @@ void write_node(funcobject* writer, astnode*node){
             write_op(writer, op_div, 0);
         } break;
         case IMPORT:{
-            write_node(writer, node->children[0]);
+            if(node->children[0]->type == STRLIT){
+                write_node(writer, node->children[0]);
+            } else {
+                object * path = strfromchar((char*)node->children[0]->val);
+                add_literal(writer, path);
+                write_op(writer, load_static, writer->statcount - 1);
+            }
             write_op(writer, import, 0);
+            char* name = strdup((char*)node->children[0]->val);
+            name = basename(name);
+            name = strtok(name, ".");
+            add_name(writer, name);
+            write_op(writer, store_name, nametable_lookup(writer, name));
+            free(name);
         } break;
         case LESSTHAN:{
             write_node(writer, node->children[0]);
@@ -486,7 +516,49 @@ void write_node(funcobject* writer, astnode*node){
             write_node(writer, node->children[1]);
             write_op(writer, op_contains, 0);
         }break;
+        case EXPR:{
+            exprobject * o = new_exprobject();
+            write_expression(o, writer, node->children[0]);
+            add_literal(writer, (object*)o);
+            write_op(writer, load_static, writer->statcount - 1);
+            o->inlined_in = writer;
+        }break;
+        case WHILE:{
+            int retpos = writer->opcount - 1;
+            write_node(writer, node->children[0]);
+            write_op(writer, jump_if_not_true, 0);
+            int jump_to_pos = writer->opcount - 1;
+            write_node(writer, node->children[1]);
+            write_op(writer, jump, retpos - writer->opcount);
+            writer->byteops[jump_to_pos].arg = writer->opcount - jump_to_pos;
+        }break;
+        case INPLADD:{
+            //we think that child[0] is name
+            
+            write_node(writer, node->children[0]);
+            write_node(writer, node->children[1]);
+            int name_index = nametable_lookup(writer, (char*)node->children[0]->val);
+            write_op(writer, op_inpl_add, name_index);
+        }break;
         default:
             break;
     }
+}
+
+void write_expression(exprobject*wr, funcobject*parent, astnode*node){
+    int opstart = parent->opcount;
+    write_node(parent, node);
+    wr->ops = malloc(sizeof(struct op)*(parent->opcount - opstart));
+    wr->bytecount = parent->opcount - opstart;
+    memcpy(wr->ops, parent->byteops + opstart, sizeof(struct op)*(parent->opcount - opstart));
+    parent->opcount = opstart;
+    wr->return_to = parent->byteops + parent->opcount;
+}
+const struct obtype EXPRTYPE;
+
+exprobject* new_exprobject(){
+    exprobject * e = malloc(sizeof(exprobject));
+    e->type = &EXPRTYPE;
+    e->refcnt = 1;
+    return e;
 }

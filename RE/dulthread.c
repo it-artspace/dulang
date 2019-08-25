@@ -11,7 +11,7 @@
 struct thread work_pool[numthreads];
 
 struct thread*less_loaded = work_pool;
-struct thread*current_thread = work_pool;
+volatile struct thread*current_thread = work_pool;
 
 
 void destroy_coro(struct _crt*c){
@@ -24,9 +24,6 @@ int exec_coro(struct _crt*coroutine){
             context* c = coroutine->sttop;
             if(exec_context(c)){
                 //context is finished
-#if use_writer
-                c->writer->flush(c->writer);
-#endif
                 context* next = c->return_to;
                 destroy_context(c);
                 if(next)
@@ -47,7 +44,7 @@ int exec_coro(struct _crt*coroutine){
 }
 
 struct _crt * start_coro( struct thread* thr, funcobject* func ) {
-    struct _crt * coro = (struct _crt *) malloc( sizeof( struct _crt));
+    struct _crt * coro = (struct _crt *) dulalloc( sizeof( struct _crt));
     if( coro == NULL ) {
         fprintf( stderr, "Can't allocate new coro\n" );
         exit( 1 );
@@ -81,34 +78,29 @@ struct _crt * start_coro( struct thread* thr, funcobject* func ) {
 
 int exec_thread(void){
     struct _crt* coro = current_thread->current;
-    if(exec_coro(coro) == coro_finished){
-        switch (current_thread->workload) {
-            case 0:
-                return 0;
-            case 1:
-                destroy_coro(current_thread->current);
-                return current_thread->workload = 0;
-            default:{
-                struct _crt* prev = coro->prev;
-                struct _crt* next = coro->next;
-                prev->next = next;
-                next->prev = prev;
-                destroy_coro(coro);
-                return --current_thread->workload;
-            }break;
+    if(!(coro->state == coro_waiting)){
+        if(exec_coro(coro) == coro_finished){
+            switch (current_thread->workload) {
+                case 0:
+                    return 0;
+                case 1:
+                    destroy_coro(current_thread->current);
+                    return current_thread->workload = 0;
+                default:{
+                    struct _crt* prev = coro->prev;
+                    struct _crt* next = coro->next;
+                    prev->next = next;
+                    next->prev = prev;
+                    destroy_coro(coro);
+                    current_thread->current = coro->next;
+                    return --current_thread->workload;
+                }break;
+            }
         }
     }
+    
     current_thread->current = coro->next;
     return current_thread->workload;
 }
 
-void writer_append(writer* w, const char*src){
-    int len = strlen(src);
-    int strpos = 0;
-    while(strpos < len){
-        strncpy(w->pos, src + strpos, 1000 - (w->pos - w->buffer));
-        strpos += 1000 - (w->pos - w->buffer);
-        w->flush(w);
-        w->pos = w->buffer;
-    }
-}
+

@@ -32,8 +32,6 @@ const struct obtype RANGEITERTYPE = {
     &range_iter_next, //next_iter
     0, // [0]
     0, // [0] =
-    0, // [""]
-    0, // [""] =
     0, // tostr
     0, //copy
     &unpack_range_iter,  //unpack,
@@ -69,16 +67,20 @@ object* init_range_iter(const object* r){
     i->refcnt = 1;
     i->type = &RANGEITERTYPE;
     i->coll = (rangeobject*)r;
-    i->pos = ((rangeobject*)r)->start;
+    i->pos = (dulnumber*)numfromdouble(((rangeobject*)r)->start);
+    i->pos->refcnt = 1;
     return (object*)i;
 }
 
 object* range_iter_next(object* iter){
     range_iter* ri = (range_iter*)iter;
-    ri->pos += ri->coll->step;
+    if(ri->pos->refcnt > 1){
+        ri->pos = numfromdouble(ri->pos->val);
+    }
+    ri->pos->val += ri->coll->step;
     int min_range_interval = ri->coll->start<ri->coll->end?ri->coll->start:ri->coll->end;
     int max_range_interval = ri->coll->start>ri->coll->end?ri->coll->start:ri->coll->end;
-    if(ri->pos >= max_range_interval || ri->pos < min_range_interval){
+    if(ri->pos->val >= max_range_interval || ri->pos->val < min_range_interval){
         free(iter);
         return 0;
     }
@@ -86,5 +88,5 @@ object* range_iter_next(object* iter){
 }
 
 object* unpack_range_iter   (const object*iter){
-    return numfromdouble(((range_iter*)iter)->pos);
+    return (object*)((range_iter*)iter)->pos;
 }

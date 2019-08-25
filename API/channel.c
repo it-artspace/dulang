@@ -28,12 +28,12 @@ METHOD_DECL(push){
     if(self_->last - self_->first + Args.a_passed >= self_->capacity){
         self_->first = realloc(self_->first, (self_->capacity*=2)*sizeof(object*));
     }
-    for(object* arg = *Args.aptr; arg < *Args.aptr+Args.a_passed; ++arg){
-        *self_->last++ = arg;
+    for(object** arg = Args.aptr; arg < Args.aptr+Args.a_passed; ++arg){
+        *self_->last++ = *arg;
     }
     if(self_->receive_callback!=0){
         object* callback = self_->receive_callback;
-        if(strcmp(callback->type->name, "functional object")==0){
+        if(callback->type == &FUNCTYPE){
 #warning change on multithreading
             context* c = init_context((funcobject*)callback, current_thread->current);
             for(int i = 0; i<((funcobject*)callback)->namecount; ++i){
@@ -43,8 +43,10 @@ METHOD_DECL(push){
                 }
             }
         }
-        if(strcmp(callback->type->name, "builtin")==0){
-#warning TODO: builtin callbacks
+        if(callback->type == &BINTYPE){
+            bin_method* f = (bin_method*)callback;
+            binarg Args;
+            f->func_pointer(self, Args);
         }
     }
     return 0;
@@ -60,13 +62,24 @@ METHOD_DECL(get){
     return to_ret;
 }
 
+METHOD_DECL(get_all){
+    dulchannel* s = (dulchannel*)self;
+    if(s->first == s->last){
+        return 0;
+    }
+    object* to_ret = _mktuple(s->last, (int)(s->last - s->first));
+    s->last = s->first;
+    return to_ret;
+}
+
 BIN_DECL(new_channel){
-    dulchannel* c = malloc(sizeof(dulchannel));
+    dulchannel* c = dulalloc(sizeof(dulchannel));
     c->capacity = 15;
-    c->first = malloc(sizeof(object*)*c->capacity);
+    c->first = dulalloc(sizeof(object*)*c->capacity);
     c->last = c->first;
     c->refcnt = 0;
     c->type = &CHANTYPE;
+    c->receive_callback = 0;
     return (object*)c;
 }
 
@@ -88,8 +101,13 @@ static struct {
         &BINTYPE,
         1,
         &get
-    }}};
-static int chan_mc = 3;
+    }}, {
+    "getAll", {
+        &BINTYPE,
+        1,
+        &get_all
+}}};
+static int chan_mc = 4;
 
 
 object * get_chan_methods(void){
@@ -97,7 +115,7 @@ object * get_chan_methods(void){
     if(methods == 0){
         methods = new_ob();
         for(int i = 0; i< chan_mc; ++i){
-            ob_subscr_set(methods, chan_methods[i].name, (object*)&chan_methods[i].m);
+            ob_subscr_set(methods, strfromchar(chan_methods[i].name), (object*)&chan_methods[i].m);
         }
     }
     return methods;
@@ -107,7 +125,7 @@ char* dump_channel(object * c){
     dulchannel*self = (dulchannel*)c;
 #warning TODO: decrease mallocs/ensafe
     int elemc = (int)(self->last - self->first);
-    char** child_dump = (char**)malloc(sizeof(char*)*elemc);
+    char** child_dump = (char**)dulalloc(sizeof(char*)*elemc);
     for(object** child = self->first; child != self->last; ++child){
         child_dump[child - self->first] = (*child)->type->dump((*child));
     }
@@ -115,7 +133,7 @@ char* dump_channel(object * c){
     for(int i = 0; i<elemc; ++i){
         final_size += strlen(child_dump[i])+2;
     }
-    char* selfdump = malloc(final_size + 3);
+    char* selfdump = dulalloc(final_size + 3);
     selfdump[final_size + 2] = 0;
     char* writer = selfdump;
     *writer++ = '<';
@@ -154,8 +172,6 @@ const struct obtype CHANTYPE = {
     0, //next_iter
     0, // [0]
     0, // [0] =
-    0, // [""]
-    0, // [""] =
     0, // tostr
     0, //copy
     0,  //unpack,

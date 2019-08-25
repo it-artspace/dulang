@@ -1,2 +1,2 @@
-a = (1, 2, "string")
-write a[2]
+A = "this is public"
+a = "this is module - private"

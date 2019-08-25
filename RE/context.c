@@ -11,13 +11,23 @@
 #include "../api.h"
 #include "../debuginfo.h"
 #include "../buildscript.h"
+#include <ctype.h>
+#include <unistd.h>
 
 
 int exec_context(context*ctx){
-    struct op * _op = ctx->co_static->byteops+ ctx->current_op++;
-
+    struct op * _op = ctx->inst_pointer++;
+    const funcobject * co_static = ctx->co_static;
+    if(ctx->cur_expr)
+        co_static = ctx->cur_expr->inlined_in;
 #if print_opcode_run
-    printf("executing %2d opcode at %10lX: %*s : %d\n", ctx->current_op-1, (unsigned long)ctx, 20, opcode_repres_[_op->op_code], _op->arg);
+    int i_ptr;
+    if(ctx->cur_expr){
+        i_ptr = ctx->inst_pointer - ctx->cur_expr->ops;
+    } else {
+        i_ptr = ctx->inst_pointer - ctx->co_static->byteops;
+    }
+    printf("executing %2d opcode at %10lX: %*s : %d\n", i_ptr, (unsigned long)ctx, 20, opcode_repres_[_op->op_code], _op->arg);
 #endif
     switch (_op->op_code) {
         case store_name:
@@ -27,16 +37,22 @@ int exec_context(context*ctx){
             INCREF(ctx->vars[_op->arg]);
             
 #if print_opcode_run
-            char* dumpvar = ctx->vars[_op->arg]->type->dump(ctx->vars[_op->arg]);
-            printf("%*s = %s\n", 10, ctx->co_static->varnames[ _op->arg ], dumpvar );
-            free(dumpvar);
+            if(ctx->vars[_op->arg] && ctx->vars[_op->arg]->type->dump){
+                char* dumpvar = ctx->vars[_op->arg]->type->dump(ctx->vars[_op->arg]);
+                printf("%*s = %s\n", 10, ctx->co_static->varnames[ _op->arg ], dumpvar );
+                free(dumpvar);
+            }
+            
 #endif
             break;
         case load_name:
             *ctx->stackptr++ = ctx->vars[_op->arg];
             break;
         case load_static:
-            *ctx->stackptr++ = ctx->co_static->statics[_op->arg];
+            if(!ctx->cur_expr)
+                *ctx->stackptr++ = ctx->co_static->statics[_op->arg];
+            else
+                *ctx->stackptr++ = ctx->cur_expr->inlined_in->statics[_op->arg];
             break;
         case _write:
             do{
@@ -44,35 +60,39 @@ int exec_context(context*ctx){
                 if(!sttop){
                     printf("null\n");
                 } else {
-                    char* dump = sttop->type->dump(sttop);
-#if use_writer
                     
-                    fprintf(output, "%s\n", dump);
+#if use_writer
+                    binarg a;
+                    a.aptr = ctx->stackptr -= _op->arg - 1;
+                    a.a_passed = _op->arg;
+                    push((object*)ctx->writer, a);
 #else
                     printf("%s\n", dump);
 #endif
-                    free(dump);
+                    
                 }
                 
 
             }while(0);
             break;
-        case jump_if_not_true:
-            do{
-                object* b = *--ctx->stackptr;
-                if(strcmp(b->type->name, "boolean")!=0 )
-                    printf("cannot check if expr is true\n");
+        case jump_if_not_true:{
+            object* b = *--ctx->stackptr;
+            if(!b){
+                ctx->inst_pointer += _op->arg;
+                break;
+            }
+            if(b->type == &BOOLTYPE)
                 if(!((dulbool*)b)->val)
-                    ctx->current_op += _op->arg;
-            }while(0);
-            break;
+                    ctx->inst_pointer += _op->arg;
+
+            }break;
         case jump:
-            ctx->current_op+= _op->arg;
+            ctx->inst_pointer+= _op->arg;
             break;
         case funcdef:
             do{ funcobject* generic = (funcobject*)ctx->co_static->statics[_op->arg];
                 
-                    funcobject* newobj = (funcobject*)malloc(sizeof(funcobject));
+                    funcobject* newobj = (funcobject*)dulalloc(sizeof(funcobject));
                     memcpy(newobj, generic, sizeof(funcobject));
                     newobj->outer_context = ctx;
                     *ctx->stackptr++ = (object*)newobj;
@@ -99,7 +119,15 @@ int exec_context(context*ctx){
                 fprintf(stderr, "null pointer exception: cannot invoke a nulled object\n");
                 break;
             }
-            if(strcmp(sttop->type->name, "functional object") == 0){
+            if(sttop->type == &EXPRTYPE){
+                exprobject* expr = (exprobject*)sttop;
+                expr->return_to = ctx->inst_pointer;
+                ctx->cur_expr = expr;
+                ctx->inst_pointer = expr->ops;
+                ctx->stop_ptr = expr->ops + expr->bytecount;
+                break;
+            }
+            if(sttop->type == &FUNCTYPE){
                 context* c = init_context((funcobject*)sttop, ctx->coroutine);
                 //*++ctx->stackptr = 0;
                 //object* args = *--ctx->stackptr;
@@ -111,7 +139,7 @@ int exec_context(context*ctx){
                     c->vars[i] = *--ctx->stackptr;
                 
             }
-            if(strcmp(sttop->type->name, "builtin") == 0){
+            if(sttop->type == &BINTYPE){
                 
                 builtin_func* f = (builtin_func*)sttop;
                 binarg Args = {ctx->stackptr -= _op->arg, _op->arg};
@@ -154,7 +182,7 @@ int exec_context(context*ctx){
         } break;
         case check_iter:{
             if(!ctx->stackptr[-1]){
-                ctx->current_op += _op->arg;
+                ctx->inst_pointer += _op->arg;
                 
             }
         } break;
@@ -222,7 +250,7 @@ int exec_context(context*ctx){
                 //try to get as member
                 if(strcmp(method_name->type->name, "string")==0){
                     dulstring* s = (dulstring*)method_name;
-                    object* method_ob = self->type->strsubscr_get(self, s->content);
+                    object* method_ob = self->type->subscript_get(self, s);
                     //methodob typecheck
                     if(strcmp(method_ob->type->name, "builtin")==0){
 #warning TODO: this pass
@@ -261,7 +289,7 @@ int exec_context(context*ctx){
                 a.a_passed = _op->arg;
                 a.aptr = ctx->stackptr -= a.a_passed;
                 dulstring* m_name_casted = (dulstring*)method_name;
-                bin_method* bin_method_ = (bin_method*)ob_subscr_get(self->type->get_methods(), m_name_casted->content);
+                bin_method* bin_method_ = (bin_method*)ob_subscr_get(self->type->get_methods(), m_name_casted);
                 *ctx->stackptr++ = bin_method_->func_pointer(self, a);
             }
             
@@ -271,36 +299,14 @@ int exec_context(context*ctx){
         case _subscr_get:{
             object* o = *--ctx->stackptr;
             object* subscribant = *--ctx->stackptr;
-            if(strcmp(subscribant->type->name, "number")==0){
-                if(o->type->subscript_get){
-                    *ctx->stackptr++ = o->type->subscript_get(o, ((dulnumber*)subscribant)->val);
-                }
-            }
-            if(strcmp(subscribant->type->name, "string")==0){
-                if(o->type->strsubscr_get){
-                    dulstring* str = (dulstring*)subscribant;
-                    *ctx->stackptr++ = o->type->strsubscr_get(o, str->content);
-                }
-            }
-            
-            
-           
+            *ctx->stackptr++ = o->type->subscript_get(o, subscribant);
         }break;
         case _subscr_set:{
             object* o = *--ctx->stackptr;
             object* subscribant = *--ctx->stackptr;
             object*val = *--ctx->stackptr;
-            if(strcmp(subscribant->type->name, "number")==0){
-                if(o->type->subscript_set){
-                    o->type->subscript_set(o, ((dulnumber*)subscribant)->val, val);
-                }
-            }
-            if(strcmp(subscribant->type->name, "string")==0){
-                if(o->type->strsubscr_set){
-                    dulstring* str = (dulstring*)subscribant;
-                    o->type->strsubscr_set(o, str->content, val);
-                }
-            }
+            if(o)
+                o->type->subscript_set(o, subscribant, val);
         }break;
         case assign_many : {
             
@@ -330,15 +336,15 @@ int exec_context(context*ctx){
             *ctx->stackptr++ = boolfromlexem(result);
         } break;
         case doasync:{
-            context* async_ctx = init_context(ctx->co_static, 0);
+            struct _crt * newcoro = start_coro(current_thread, ctx->co_static);
+            context * async_ctx = newcoro->sttop;
             for(int i = 0; i<ctx->co_static->namecount; ++i){
                 async_ctx->vars[i] = ctx->vars[i];
                 INCREF(async_ctx->vars[i]);
             }
-            async_ctx->current_op = ctx->current_op;
-            async_ctx->stop_op = ctx->current_op+_op->arg;
-            link_async(async_ctx);
-            ctx->current_op+=_op->arg;
+            async_ctx->inst_pointer = ctx->inst_pointer;
+            async_ctx->stop_ptr = ctx->inst_pointer+_op->arg;
+            ctx->inst_pointer+=_op->arg;
         }break;
         case unpack_tuple:{
             object*sttop = *--ctx->stackptr;
@@ -355,22 +361,89 @@ int exec_context(context*ctx){
             }
         } break;
         case import:{
-            struct op *prev_op = ctx->co_static->byteops + ctx->current_op - 2;
+           
             //get the name
-            char*modname = ctx->co_static->varnames[prev_op->arg];
-            object* mod = getmodule(modname);
+            char*modname = ((dulstring*)*--ctx->stackptr)->content;
+            char mnamebuf [100];
+            if(access(modname, F_OK)==-1){
+                sprintf(mnamebuf, "DLIB/%s", modname);
+                modname = mnamebuf;
+            }
+            if(strstr(modname, ".dul")){
+                funcobject * f = file_to_fo(modname);
+                context * c = init_context(f, ctx->coroutine);
+                modname = strtok(modname, ".");
+            } else {
+                import_module(modname);
+            }
+            /*object* mod = getmodule(modname);
             if(!mod){
                 fprintf(stderr, "module not found %s", modname);
                 break;
             }
-            ctx->vars[prev_op->arg] = mod;
+            *ctx->stackptr ++ = mod;*/
             
         } break;
-        
+        case op_inpl_add:{
+            object* right = *--ctx->stackptr;
+            object* left = *--ctx->stackptr;
+            if(left && left->type->inpadd){
+                object* res = left->type->inpadd(left, right);
+                if(res != left){
+                    INCREF(res);
+                    DECREF(ctx->vars[_op->arg]);
+                    ctx->vars[_op->arg] = res;
+                }
+            } else {
+                // error !
+            }
+        }break;
+        case pack_module:{
+            ctx->this_ptr = new_ob();
+            for(int i = 0; i<ctx->co_static->namecount; ++i){
+               
+                    //otherwise is private
+                    ob_subscr_set(ctx->this_ptr, strfromchar(ctx->co_static->varnames[i]), ctx->vars[i]);
+                
+            }
+        }break;
+        case op_geq:{
+            object * right = *--ctx->stackptr;
+            object * left = *ctx->stackptr;
+            if(left && left->type->gequal){
+                *ctx->stackptr = boolfromlexem(left->type->gequal(left, right));
+            } else {
+                *ctx->stackptr = 0;
+            }
+        }break;
+        case op_leq:{
+            object * right = *--ctx->stackptr;
+            object * left = *ctx->stackptr;
+            if(left && left->type->lequal){
+                *ctx->stackptr = boolfromlexem(left->type->lequal(left, right));
+            } else {
+                *ctx->stackptr = 0;
+            }
+        }break;
+        case op_gt:{
+            object * right = *--ctx->stackptr;
+            object * left = *ctx->stackptr;
+            if(left && left->type->gt){
+                *ctx->stackptr = boolfromlexem(left->type->gt(left, right));
+            } else {
+                *ctx->stackptr = 0;
+            }
+        }break;
         default:
             break;
     }
-if(ctx->current_op >= ctx->stop_op){
+    if(ctx->inst_pointer >= ctx->stop_ptr){
+        if(ctx->cur_expr){
+            ctx->inst_pointer = ctx->cur_expr->return_to;
+            ctx->stop_ptr = ctx->co_static->byteops + ctx->co_static->opcount;
+            ctx->cur_expr = 0;
+            return 0;
+        }
         if(ctx->return_to)
             *(ctx->return_to->stackptr)++ = ctx->this_ptr;
         return 1;
@@ -379,34 +452,77 @@ if(ctx->current_op >= ctx->stop_op){
     }
 }
 
+typedef struct {
+    //inherited from channel
+    ObHead
+    object ** first;
+    object ** last;
+    int capacity;
+    object * receive_callback;
+    FILE* send_to;
+} dulIOchannel;
 
-void flush_writer(writer*w){
-    fprintf(output, "%*s", (int)(w->pos - w->buffer), w->buffer);
-    w->pos = w->buffer;
+METHOD_DECL(flush_writer){
+    dulIOchannel* self_ = (dulIOchannel*)self;
+    if(self_->send_to == 0)
+        self_->send_to = stdout;
+    for(object** iter = self_->first; iter != self_->last; ++iter){
+        if(*iter){
+            if((*iter)->type->dump){
+                char* d = (*iter)->type->dump((*iter));
+                fprintf(self_->send_to, "%s", d);
+                free(d);
+            } else {
+                fprintf(self_->send_to, "%s at %lX", (*iter)->type->name, (long)(*iter));
+            }
+        } else {
+            fprintf(self_->send_to, "null");
+        }
+        fputc(' ', self_->send_to);
+    }
+    fputc('\n', self_->send_to);
+    self_->last = self_->first;
+    fflush(self_->send_to);
+    return 0;
+}
+
+bin_method flush = {
+    &BINTYPE,
+    1, //isnt to be garbage-collected
+    &flush_writer
+};
+
+object* new_IOchannel(){
+    dulIOchannel * c = malloc(sizeof(dulIOchannel));
+    c->refcnt = 1;
+    c->type = &CHANTYPE;
+    c->capacity = 15;
+    c->first = malloc(15*sizeof(object*));
+    c->last = c->first;
+    c->receive_callback = (object*)&flush;
+    c->send_to = output;
+    return (object*)c;
 }
 
 
 context* init_context(const funcobject*co_static, struct _crt*coro){
-    context* ctx = (context*)malloc(sizeof(context));
+    context* ctx = (context*)dulalloc(sizeof(context));
 #if use_writer
-    ctx->writer = (writer*)malloc(sizeof(writer));
-    ctx->writer->pos = ctx->writer->buffer;
-    ctx->writer->flush = &flush_writer;
+    ctx->writer = (dulchannel*)new_IOchannel();
 #endif
     ctx->co_static = co_static;
-    ctx->stackptr = (object**)malloc(1000*sizeof(object*));
+    ctx->stackptr = (object**)dulalloc(1000*sizeof(object*));
     ctx->rstptr = ctx->stackptr;
-    ctx->current_op = 0;
-    ctx->is_weakref = 0;
-    ctx->is_waiting = 0;
+    ctx->inst_pointer  = co_static->byteops;
     if(coro)
         ctx->return_to = coro->sttop;
     else
         ctx->return_to = 0;
+    ctx->cur_expr = 0;
     ctx->coroutine = coro;
-    ctx->stop_op = co_static->opcount;
+    ctx->stop_ptr = co_static->opcount + co_static->byteops;
     ctx->this_ptr = NULL;
-    ctx->vars = (object**)malloc(co_static->namecount*sizeof(object*));
+    ctx->vars = (object**)dulalloc(co_static->namecount*sizeof(object*));
     for(int i = 0; i<co_static->namecount; ++i)
         ctx->vars[i] = 0;
     eval_std(ctx);
@@ -422,14 +538,14 @@ void destroy_context(context*ctx){
     }
     //
     
-    free(ctx->rstptr);
+    dulfree(ctx->rstptr);
     //vars will be freed in another place
     free(ctx);
 }
 
 
 void link_async(context*ctx){
-    struct _crt* new_coroutine = (struct _crt*)malloc(sizeof(struct _crt));
+    struct _crt* new_coroutine = (struct _crt*)dulalloc(sizeof(struct _crt));
     struct _crt* prev = current_thread->current;
     struct _crt* next = current_thread->current->next;
     new_coroutine->next = next;

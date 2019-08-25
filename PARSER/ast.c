@@ -41,7 +41,9 @@ const char* astnames[] = {
     "RETURN",
     "MODULE",
     "UNPACK_ITER",
-    "IMPORT"
+    "IMPORT",
+    "EXPR",
+    "WHILE"
 };
 
 void		astnode_emplace_va 	( astnode* parent, astnode* node, enum asttype type, int capacity, int children, va_list va )
@@ -53,7 +55,7 @@ void		astnode_emplace_va 	( astnode* parent, astnode* node, enum asttype type, i
 
 	node->type 		     = type;
 	node->ch_capacity 	 = capacity;
-	node->children    	 = (astnode**) malloc( sizeof( astnode* ) * capacity );
+	node->children    	 = (astnode**) dulalloc( sizeof( astnode* ) * capacity );
 	node->children_count = children;
 	node->parent 		 = parent;
 	node->val			 = 0;
@@ -72,7 +74,7 @@ void		astnode_emplace ( astnode* parent, astnode* node, enum asttype type, int c
 
 astnode*	astnode_new		( enum asttype type, int capacity, int children, ... )
 {
-	astnode*	result = (astnode*) malloc( sizeof( astnode ));
+	astnode*	result = (astnode*) dulalloc( sizeof( astnode ));
 	va_list		va;
 	
 	va_start( va, children );
@@ -135,13 +137,13 @@ void		astnode_delete		( astnode* node )
 		astnode_delete( node->children[ idx ]);
 	}
 	if( node->children != NULL )
-		free( node->children );
+		dulfree( node->children );
 	node->children = NULL;
 	node->ch_capacity = 0;
 	node->children_count = 0;
 	node->parent = NULL;
 	if(node->val != NULL)
-		free(node->val);
+		dulfree(node->val);
 }
 
 void		astnode_add_child	( astnode* parent, astnode* child )

@@ -1,4 +1,17 @@
-for _ in range(2)
-	a = "str"
-	write a
-	a[0] = "b"
+import "html.dul"
+doc = html.Document()
+title = html.createNode("title")
+title.text = "my title"
+doc.head.children.append(title)
+doc.body.div{
+	this.width = "100vw"
+	this.text = "sometext"
+	this.style = object{
+#style object captured
+		this["background-color"] = "blue"
+		this.color = "white"
+	}
+	this.click("this.style.color='black'")
+}
+write doc.render()
+

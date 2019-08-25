@@ -8,7 +8,7 @@
 
 #ifndef api_h
 #define api_h
-
+#include "INCLUDE/exprobject.h"
 #include "INCLUDE/string.h"
 #include "INCLUDE/bundle.h"
 #include "INCLUDE/builtin.h"
@@ -29,4 +29,6 @@
 #include "debuginfo.h"
 #include "INCLUDE/array.h"
 #include "INCLUDE/channel.h"
+#include "INCLUDE/asttoJS.h"
+
 #endif /* api_h */

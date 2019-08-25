@@ -19,6 +19,7 @@ typedef struct {
 } dulchannel;
 
 BIN_DECL(new_channel);
+METHOD_DECL(push);
 extern const struct obtype CHANTYPE;
 object * get_chan_methods(void);
 #endif /* channel_h */

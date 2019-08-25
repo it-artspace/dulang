@@ -53,13 +53,15 @@ enum splexems{
 	kwasync,
 	kwwrite,
     kwimport,
+    kwobject,
     kwin,
     kwreturn,
+    kwwhile,
 	indent,
 	dedent
 };
 
-static const char* ltext[] = {"->","$eol",".", "(", ")", "{", "}", "[", "]", ",", ":", "==", "!=", "<", ">", "<=", ">=", "+=", "-=", "*=", "/=", "=", "+", "-", "*", "/", "or", "and", "not", "if", "for", "true", "false", "else", "fun", "class", "async", "write", "import", "in", "return", "$indent", "$dedent" };
+static const char* ltext[] = {"->","$eol",".", "(", ")", "{", "}", "[", "]", ",", ":", "==", "!=", "<", ">", "<=", ">=", "+=", "-=", "*=", "/=", "=", "+", "-", "*", "/", "or", "and", "not", "if", "for", "true", "false", "else", "fun", "class", "async", "write", "import", "Object", "in", "return", "while", "$indent", "$dedent" };
 
 static const int ltextcount = indent;
 

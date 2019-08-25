@@ -35,6 +35,8 @@ object* __bin_range     (binarg Args, struct _crt *);
 object* __bin_typeof    (binarg Args, struct _crt *);
 object* __bin_object    (binarg Args, struct _crt *);
 object* __bin_str       (binarg Args, struct _crt *);
+object* __bin_array     (binarg Args, struct _crt *);
+object* __bin_time      (binarg Args, struct _crt *);
 extern const struct obtype BINTYPE;
 extern const struct obtype BINMTYPE;
 #endif /* builtin_h */

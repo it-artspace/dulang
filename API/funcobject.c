@@ -48,7 +48,9 @@ const char *opcode_repres_ [] =  {
     "implsubscr",
     "import",
     "contains",
-    "unpack"
+    "unpack",
+    "expr_stop",
+    "pack_mod"
 };
 
 void destroy_func(object*f){
@@ -91,19 +93,24 @@ char* dumpfunc(object*fobj){
     }
     bias+=sprintf(global_dump+bias, "\tstatics:\n");
     for(int i = 0; i<f->statcount; ++i){
-        char*local_dump = f->statics[i]->type->dump(f->statics[i]);
-        bias+=sprintf(global_dump+bias, "\t\t%s\n", local_dump);
-        free(local_dump);
+        if(f->statics[i]->type->dump){
+            char*local_dump = f->statics[i]->type->dump(f->statics[i]);
+            bias+=sprintf(global_dump+bias, "\t\t%s\n", local_dump);
+            free(local_dump);
+        }
+       
     }
     bias+=sprintf(global_dump+bias, "\topcodes:\n");
     for(int i = 0; i<f->opcount; ++i){
-        bias+=sprintf(global_dump+bias, "\t\t%s%.*s :  %d\n", opcode_repres_[f->byteops[i].op_code],
+        bias+=sprintf(global_dump+bias, "\t\t%.2d %s%.*s :  %d\n",
+            i+1,
+            opcode_repres_[f->byteops[i].op_code],
             20 - (int)strlen(opcode_repres_[f->byteops[i].op_code]),
             w_space_str,
             f->byteops[i].arg);
     }
 #else
-    char* global_dump = (char*)malloc(100);
+    char* global_dump = (char*)dulalloc(100);
     sprintf(global_dump, "function at %lX", (unsigned long)fobj);
 #endif
     return global_dump;

@@ -18,11 +18,11 @@ typedef struct {
     ObHead
     int count;
     int cap;
-    struct {
-        char name [20];
-        char is_valid;
+    struct obentry{
+        //represented with dulstring for better performance
+        object* name;
         object* member;
-    } content[256];
+    } * content;
 } single_ob;
 
 typedef struct {
@@ -33,8 +33,8 @@ typedef struct {
 
 object* new_ob(void);
 char ob_contains_field  (const object*self, const object*);
-object* ob_subscr_get   (const object*self, const char*);
-void ob_subscr_set      (object*, const char*, object*);
+object* ob_subscr_get   (const object*self, object*);
+void ob_subscr_set      (object*, object*, object*);
 object* ob_method_call  (object*, const char*, object*, struct ctx*);
 extern const struct obtype SINOBTYPE;
 char*   dump_object     (object*self);

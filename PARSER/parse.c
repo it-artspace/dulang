@@ -58,24 +58,11 @@ void		parse_error_at			( lexem* currlexem, const char* format, ... )
 }
 
 
-astnode* parse_arg_lambda(dulparser* parser){
-    if(preview_lexem(parser)->t == SPECIAL && preview_lexem(parser)->sp == EOL){ //неявный аргумент this или it
-        extract_lexem(parser);
-       
-    } else {
-        //there can be expression or only args and then compound
-        //if one expression - inline?
-    }
-    astnode* funcnode = parse_compound(parser);
-    astnode* params = astnode_new(NULL_, 0, 0);
-    return 0;
-}
 
 
 
 astnode*	parse_file			( const char*fname ){
-    //проверка на то, кончается ли на .io
-    dulparser* parser = open_parser(fname);
+    dulparser* parser = open_parser(strdup(fname));
 	while( get_string( parser ) == 0 )	{
 		while( getlexem( parser ) != NONE )
 			;
@@ -105,10 +92,6 @@ astnode*	parse_file			( const char*fname ){
 #endif
 
 	astnode*  filefunc = astnode_new(MODULE, 100, 0 );
-    //char*modname = basename(strdup(fname));
-    //filefunc->val = malloc(strlen(fname));
-    //strncpy((char*)filefunc->val, modname , strlen(modname)-3);
-    //free(modname);
 	lexem*	  curr;
 	
 	while( (curr=preview_lexem( parser )) != NULL )
@@ -126,6 +109,7 @@ astnode*	parse_file			( const char*fname ){
 		}
 		astnode_add_child( filefunc, statement );
 	}
+    destroy_parser(parser);
 	return filefunc;
 }
 
@@ -230,6 +214,21 @@ astnode*	parse_statement	( dulparser* parser )
                 }
                 return astnode_new(IMPORT, 1, 1, arg);
             } break;
+            case kwwhile:{
+                extract_lexem(parser);
+                astnode*expr = parse_expression(parser);
+                if(preview_lexem(parser)->t != SPECIAL || preview_lexem(parser)->sp != EOL){
+                    //needed EOL
+                    parse_error_at(preview_lexem(parser), "expected end of line but token found");
+                    return 0;
+                }
+                extract_lexem(parser);
+                astnode*comp = parse_compound(parser);
+                if(comp == 0){
+                    return 0;
+                }
+                return astnode_new(WHILE, 2, 2, expr, comp);
+            }break;
             default:
                 break;
         }
@@ -530,12 +529,10 @@ astnode* parse_postfix(dulparser*parser){
                     }
                 } else {
                     //here is one line expr
-                    astnode*expr = parse_subexpr(parser, Cbrace);
-                    
-                    astnode*c = astnode_new(COMPOUND, 1, 1, expr);
-                    astnode* f = astnode_new(FUNCDEF, 2, 2, astnode_new(NULL_, 0, 0), c);
-                    f->val = (void*)strdup("lambda");
-                    main = astnode_new(FUNCCALL, 2, 2, main, f);
+                    astnode*expr = parse_statement(parser);
+                    extract_lexem(parser);
+                    astnode* exprnode = astnode_new(EXPR, 1, 1, expr);
+                    main = astnode_new(FUNCCALL, 2, 2, main, exprnode);
                 }
                 
             }break;
@@ -735,6 +732,7 @@ astnode*	parse_expression	( dulparser* parser )
 
 			case CRBracket:
 			case CSbracket:
+            case Cbrace:
 				return left;
 				
 

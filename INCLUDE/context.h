@@ -10,6 +10,7 @@
 #define context_h
 
 #include "../api.h"
+#include "channel.h"
 #define use_writer 1
 struct thread;
 struct w;
@@ -17,16 +18,15 @@ struct _crt;
 typedef struct ctx{
     object** vars;
     const funcobject* co_static;
-    int current_op;
-    int stop_op;
-    int is_waiting;
-    int is_weakref;
+    struct op* inst_pointer;
+    struct op* stop_ptr;
     object** stackptr;
     object** rstptr;
     object** stack_to_revert;
     object* this_ptr;
+    exprobject * cur_expr;
     struct ctx* return_to;
-    struct w*writer;
+    dulchannel * writer;
     struct _crt* coroutine;
 } context;
 

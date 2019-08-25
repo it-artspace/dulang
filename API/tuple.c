@@ -18,13 +18,13 @@ object* __bin_tuple_map(object*s, binarg A, struct _crt* coro){
     object* arg = *A.aptr;
     if(strcmp(arg->type->name, "functional object") == 0){
         funcobject*f = (funcobject*)arg;
-        bundle* nb = (bundle*)malloc(sizeof(bundle) + sizeof(object*)*self->count);
+        bundle* nb = (bundle*)dulalloc(sizeof(bundle) + sizeof(object*)*self->count);
         nb->refcnt = 0;
         nb->type = &BUNDLETYPE;
         nb->count = self->count;
         for(int i = 0; i<self->count; ++i){
             context*c = init_context(f, coro);
-            while(c->current_op < c->stop_op)
+            while(c->inst_pointer != c->stop_ptr)
                 exec_context(c);
             //here it returns
         }
@@ -38,20 +38,26 @@ object* __bin_tuple_map(object*s, binarg A, struct _crt* coro){
    
 }
 
-object* tuple_sub_get(object*self, int pos){
-    bundle*b = (bundle*)self;
-    if(pos < 0 || pos> b->count)
+object* tuple_sub_get(object*self, object*pos){
+    if(!pos || pos->type->type_id != number_id)
         return 0;
-    return b->items[pos];
+    dulnumber* p = (dulnumber*)pos;
+    bundle*b = (bundle*)self;
+    if(p->val < 0 || p->val> b->count)
+        return 0;
+    return b->items[(int)p->val];
 }
 
-void tuple_sub_set(object*self, int pos, object*val){
+void tuple_sub_set(object*self, object*pos, object*val){
+    if(!pos || pos->type->type_id != number_id)
+        return;
+    dulnumber* p = (dulnumber*)pos;
     bundle*b = (bundle*)self;
-    if(pos < 0 || pos> b->count){
+    if(p->val < 0 || p->val> b->count){
         fprintf(stderr, "out of index-error");
         return;
     }
-    b->items[pos] = val;
+    b->items[(int)p->val] = val;
     INCREF(val);
 }
 
@@ -85,14 +91,10 @@ const struct obtype BUNDLETYPE = {
     0, //next_iter
     &tuple_sub_get, // [0]
     &tuple_sub_set, // [0] =
-    0, // [""]
-    0, // [""] =
     0, // tostr
     0, //copy
     0, //unpack,
-    0, //deprecated method
     tuple_id,
-    0
     
 };
 
@@ -107,9 +109,9 @@ const builtin_func map = {
 
 
 object* _mktuple(object** stackptr, int num){
-    bundle* b = (bundle*)malloc(sizeof(bundle) + sizeof(object*) * num);
+    bundle* b = (bundle*)dulalloc(sizeof(bundle) + sizeof(object*) * num);
     b->count = num;
-    b->refcnt = 1;
+    b->refcnt = 0;
     b->type = &BUNDLETYPE;
     for(object** ptr = stackptr - num; ptr!=stackptr; ++ptr){
         b->items[num +(ptr - stackptr)] = *ptr;
@@ -126,7 +128,7 @@ void destr_tuple(object * ob){
 
 char* dump_tuple(object * t){
     bundle* ob = (bundle*)t;
-    char* dump = (char*)malloc(1000);
+    char* dump = (char*)dulalloc(1000);
     char*writer = dump;
     *writer++ = '(';
     for(int i = 0; i<ob->count; ++i){

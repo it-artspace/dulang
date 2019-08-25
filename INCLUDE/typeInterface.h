@@ -41,7 +41,7 @@ struct obtype{
     object*     (*minus_op)     (object*,  object*);
     object*     (*mult_op)      (object*,  object*);
     object*     (*div_op)       (object*,  object*);
-    void        (*inpadd)       (object**,  object*);
+    object*     (*inpadd)       (object*,  object*);
     void        (*inpsub)       (object*,  object*);
     void        (*inpmult)      (object*,  object*);
     void        (*inpdiv)       (object*,  object*);
@@ -56,10 +56,8 @@ struct obtype{
     object*     (*init_iter)    (object*);
     //returns iter, null on end
     object*     (*iter_next)    (object*);
-    object*     (*subscript_get)(object*, int);
-    void        (*subscript_set)(object*, int, object*);
-    object*     (*strsubscr_get)(object*,  char*);
-    void        (*strsubscr_set)(object*,  char*, object*);
+    object*     (*subscript_get)(object*, object*);
+    void        (*subscript_set)(object*, object*, object*);
     object*     (*tostr)        (object*);
     object*     (*copy)         (object*);
     object*     (*unpack_iter)  (object*);

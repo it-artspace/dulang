@@ -16,13 +16,16 @@
 #include <libgen.h>
 #include <unistd.h>
 #include "buildscript.h"
+#include <pthread.h>
 
 FILE* output = 0;
-#define addr argv[1]
+#define addr "addr"
 
+FILE*alloc_log = 0;
 
-
-
+int f(int a, int b){
+    return a + b;
+}
 
 int exec( char* inpuf )
 {
@@ -30,16 +33,40 @@ int exec( char* inpuf )
 	return 0;
 }
 
+pthread_mutex_t workload_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t workload_cond = PTHREAD_COND_INITIALIZER;
+
+void workloop(void*a){
+    while(1){
+        pthread_mutex_lock(&workload_lock);
+        while(!current_thread->workload){
+            pthread_cond_wait(&workload_cond, &workload_lock);
+        }
+        while(current_thread->workload)
+            exec_thread();
+        pthread_mutex_unlock(&workload_lock);
+    }
+}
+
 int main(int argc, const char * argv[]) {
+    char * myname = strdup(argv[0]);
+    char namebuf [100];
+    //strcpy(namebuf, dirname(myname));
+    strcat(namebuf, "/addr");
+    strcpy(namebuf, "/Users/jernicozz/user_space/491569002/addr");
     init_mods();
+    pthread_t work_tid;
+    pthread_attr_t attrs;
+    pthread_attr_init(&attrs);
+    pthread_create(&work_tid, &attrs, &workloop, 0);
 #if socket_runner
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un servaddr;
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sun_family = AF_UNIX;
-    strcpy(servaddr.sun_path, addr);
-    unlink(addr);
-    printf("serving %s\n", addr);
+    strcpy(servaddr.sun_path, namebuf);
+    unlink(namebuf);
+    printf("serving %s\n", namebuf);
     bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
     listen(sockfd, 10);
     while(1){
@@ -50,13 +77,12 @@ int main(int argc, const char * argv[]) {
         while(fgets(script_buf, 1024, f_bound)){
             printf("%s",script_buf);
             exec(script_buf);
-            fprintf(output, "--end--");
-            fflush(output);
         }
         close(clfd);
     }
    
 #else
+    setup_aa();
     output = stdout;
     clock();
     // insert code here...
@@ -77,7 +103,7 @@ int main(int argc, const char * argv[]) {
             exec( inpuf );
         }
     }
-    
+    pthread_join(work_tid, 0);
     return 0;
 #endif
     

@@ -25,7 +25,7 @@ object* __bin_obdump    (binarg Args, struct _crt * coro){
             if(curarg->type->dump){
                 char* repr = curarg->type->dump(curarg);
                 printf("repr: %s\n", repr);
-                free(repr);
+                dulfree(repr);
             }
         } else {
             printf("nullptr");
@@ -61,7 +61,7 @@ object* __bin_range(binarg Args, struct _crt* coro){
                 fprintf(stderr, "cannot make a range out of object of type %s", o->type->name);
                 return 0;
             }
-            rangeobject* r = (rangeobject*)malloc(sizeof(rangeobject));
+            rangeobject* r = (rangeobject*)dulalloc(sizeof(rangeobject));
             r->type = &RANGEOBJECTTYPE;
             r->refcnt = 1;
             r->start = 0;
@@ -80,7 +80,7 @@ object* __bin_range(binarg Args, struct _crt* coro){
                 fprintf(stderr, "cannot make a range out of object of type %s", o_end->type->name);
                 return 0;
             }
-            rangeobject* r = (rangeobject*)malloc(sizeof(rangeobject));
+            rangeobject* r = (rangeobject*)dulalloc(sizeof(rangeobject));
             r->type = &RANGEOBJECTTYPE;
             r->refcnt = 1;
             r->start = ((dulnumber*)o_start)->val;
@@ -101,7 +101,7 @@ object* __bin_range_(object*args, struct _crt * coro){
         fprintf(stderr, "cannot initialize range with no parameters. At least one needed\n");
         return 0;
     }
-    rangeobject* r = (rangeobject*)malloc(sizeof(rangeobject));
+    rangeobject* r = (rangeobject*)dulalloc(sizeof(rangeobject));
     r->type = &RANGEOBJECTTYPE;
     r->refcnt = 1;
     if(strcmp(args->type->name, "bundle") == 0){
@@ -113,20 +113,20 @@ object* __bin_range_(object*args, struct _crt * coro){
         }
         if(strcmp(a->items[0]->type->name, "number")!=0){
             fprintf(stderr, "Parameters of numeric type are expected but %s given\n",  a->items[0]->type->name);
-            free(r);
+            dulfree(r);
             return 0;
         }
         r->start = ((dulnumber*)a->items[0])->val;
         if(strcmp(a->items[1]->type->name, "number")!=0){
             fprintf(stderr, "Parameters of numeric type are expected but %s given\n",  a->items[1]->type->name);
-            free(r);
+            dulfree(r);
             return 0;
         }
         r->end = ((dulnumber*)a->items[1])->val;
         if(a->count == 3){
             if(strcmp(a->items[2]->type->name, "number")!=0){
                 fprintf(stderr, "Parameters of numeric type are expected but %s given\n",  a->items[2]->type->name);
-                free(r);
+                dulfree(r);
                 return 0;
             }
             r->step = ((dulnumber*)a->items[2])->val;
@@ -174,8 +174,8 @@ object* __bin_object(binarg Args, struct _crt*coro){
                 return 0;
             }
             single_ob* o = (single_ob*)Args.aptr[i];
-            for(int prop_index = 0; prop_index<256; ++prop_index){
-                if(!o->content[prop_index].is_valid){
+            for(int prop_index = 0; prop_index<o->cap; ++prop_index){
+                if(o->content[prop_index].name){
                     object* m = o->content[prop_index].member;
                     ob_subscr_set(obj, o->content[prop_index].name, m);
                 }
@@ -202,4 +202,17 @@ object* __bin_str       (binarg Args, struct _crt *_){
 }
 
 
+object* __bin_time    (binarg Args, struct _crt *_){
+    return numfromdouble((double)clock()/CLOCKS_PER_SEC);
+}
 
+object* __bin_array     (binarg Args, struct _crt *_){
+    dularray * arr = ob_alloc(sizeof(dularray));
+    arr->refcnt = 0;
+    arr->elem_count = 0;
+    arr->cap = 15;
+    arr->items = malloc(sizeof(object*)*15);
+    arr->type = &ARRTYPE;
+    append((object*)arr, Args);
+    return (object*)arr;
+}

@@ -19,6 +19,6 @@ typedef struct {
 object* boolfromlexem(char*);
 //well i actually forgot that lexem type can be boolean so we use char* - is it NULL or not
 char* dumpbool(object*);
-
+extern const struct obtype BOOLTYPE;
 
 #endif /* dulbool_h */

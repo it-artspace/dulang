@@ -53,9 +53,21 @@ const builtin_func chan_ = {
     &new_channel
 };
 
+const builtin_func time_ = {
+    &BINTYPE,
+    1,
+    "time",
+    &__bin_time
+};
+const builtin_func array = {
+    &BINTYPE,
+    1,
+    "array",
+    &__bin_array
+};
 
-const builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_};
-const int bin_count = 6;
+const builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_, &time_, &array};
+const int bin_count = 8;
 
 void eval_std (context*ctx){
     for(int i = 0; i<ctx->co_static->namecount; ++i){

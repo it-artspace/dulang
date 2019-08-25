@@ -10,7 +10,7 @@
 #define rangeobject_h
 
 #include "typeInterface.h"
-
+#include "number.h"
 typedef struct {
     ObHead
     int start;
@@ -21,7 +21,7 @@ typedef struct {
 typedef struct {
     ObHead
     rangeobject* coll;
-    int pos;
+    dulnumber  * pos;
 } range_iter;
 
 object* init_range_iter     (const object*);

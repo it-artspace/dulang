@@ -8,51 +8,88 @@
 
 #include "../api.h"
 
+char fast_str_check(object * str1, object *str2){
+    dulstring * s1 = (dulstring*)str1;
+    dulstring * s2 = (dulstring*)str2;
+    if(s1->len != s2->len)
+        return 0;
+    for(int i = 0; i < s1->len; ++i){
+        if(s1->content[i] != s2->content[i])
+            return 0;
+    }
+    return 1;
+}
+
 object* new_ob(void){
-    single_ob* obj = (single_ob*)malloc(sizeof(single_ob));
+    single_ob* obj = (single_ob*)dulalloc(sizeof(single_ob));
     obj->refcnt = 0;
     obj->type = &SINOBTYPE;
     obj->count = 0;
-    obj->cap = 256;
-    for(int i = 0; i<256; ++i)
-        obj->content[i].is_valid = 1;
+    obj->cap = 32;
+    obj->content = malloc(sizeof(struct obentry)*32);
+    for(int i = 0; i<32; ++i){
+        obj->content[i].name = 0;
+        obj->content[i].member = 0;
+    }
     return (object*)obj;
 }
 
-object* ob_subscr_get   (const object*self, const char*name){
+object* ob_subscr_get   (const object*self, object * s_name){
+    char*name = ((dulstring*)s_name)->content;
     single_ob*t = (single_ob*)self;
     unsigned int index = hashstr(name) % t->cap;
-    unsigned int ini_index = index;
-    while(strcmp(name, t->content[index].name) != 0){
-        /*if(t->content[index].is_valid == 1)
-            return 0;*/
-        index = (index*5 +1) % t->cap;
-        if(index == ini_index)
+    int itercount = 0;
+    while(t->content[index].name && !fast_str_check(t->content[index].name, s_name)){
+        index = (index * 5 + 1) % t->cap;
+        if(itercount++ == t->cap)
             return 0;
     }
     return t->content[index].member;
 }
 
-void ob_subscr_set(object*self, const char*name, object*target){
+void ob_subscr_set(object*self, object*name, object*target){
     INCREF(target);
+    INCREF(name);
     single_ob* table = (single_ob*)self;
+    char * rname = ((dulstring*)name)->content;
     if(table->count *2 >= table->cap){
-        table = realloc(table, sizeof(single_ob) + sizeof(object*)*(table->cap*=2));
-    }
-    unsigned int index = hashstr(name) % table->cap;
-    
-    while(strcmp(name, table->content[index].name) != 0){
-        if(table->content[index].is_valid == 1){
-            //can be inserted here
-            break;
+        struct obentry * oldcontent = table->content;
+        int oldcap = table->cap;
+        table->content = malloc(sizeof(struct obentry)*(table->cap*=2));
+        bzero(table->content, oldcap * 2 * sizeof(struct obentry));
+        table->count = 0;
+        for(int i = 0; i<oldcap; ++i){
+            if(oldcontent[i].name)
+                ob_subscr_set(self, oldcontent[i].name, oldcontent[i].member);
         }
-        
-        index = (index*5 +1) % table->cap;
+        free(oldcontent);
+#warning TODO: index recount
     }
-    table->content[index].member = target;
-    table->content[index].is_valid = 0;
-    strcpy(table->content[index].name, name);
-    table->count++;
+    unsigned int index = hashstr(rname) % table->cap;
+    struct obentry * head = (table->content + index);
+    if(!(head->name)){
+        //can be inserted just here, most commonly used case
+        head->name = name;
+        table->count++;
+        head->member = target;
+        return;
+    }
+    //actually we are guaranteed with free place for insertion by ratio 1 : 2
+
+    while(table->content[index].name){
+        if(fast_str_check(table->content[index].name, name)){
+            //insertion on existing
+            if((table->content + index)->member)
+                DECREF(table->content[index].member);
+            (table->content + index)->member= target;
+            (table->content + index)->name = name;
+            return;
+        }
+        index = (index * 5 + 1) % table->cap;
+    }
+    table->count ++;
+    (table->content + index)->name = name;
+    (table->content + index)->member = target;
 }
 
 
@@ -79,8 +116,6 @@ const struct obtype SINOBTYPE = {
     &ob_contains_field, // a in b
     &init_obj_iter, //init_iter (collection initializes iter)
     0, //next_iter
-    0, // [0]
-    0, // [0] =
     &ob_subscr_get, // [""]
     &ob_subscr_set, // [""] =
     0, // tostr
@@ -91,12 +126,12 @@ const struct obtype SINOBTYPE = {
 
 char*   dump_object     (object*self){
     single_ob* s = (single_ob*)self;
-    char* dump = (char*)malloc(10000);
+    char* dump = (char*)dulalloc(10000);
     char*writer = dump;
     writer+= sprintf(writer, "{");
     for(int i = 0; i<s->cap;++i){
-        if(!s->content[i].is_valid){
-            writer+= sprintf(writer, "%s: ", s->content[i].name);
+        if(s->content[i].member){
+            writer+= sprintf(writer, "%s: ", ((dulstring*)s->content[i].name)->content);
             char*localdump = s->content[i].member->type->dump(s->content[i].member);
             writer+= sprintf(writer, "%s, ", localdump);
             free(localdump);
@@ -114,11 +149,12 @@ char*   dump_object     (object*self){
 
 void obj_dealloc(object*s){
     single_ob*self = (single_ob*)s;
-    for(int i = 0; i<256; ++i){
-        if(!self->content[i].is_valid){
+    for(int i = 0; i<32; ++i){
+        if(self->content[i].member){
             DECREF(self->content[i].member);
         }
     }
+    
 }
 
 const struct obtype OBJITERTYPE = {
@@ -145,8 +181,6 @@ const struct obtype OBJITERTYPE = {
     &obj_iter_next, //next_iter
     0, // [0]
     0, // [0] =
-    0, // [""]
-    0, // [""] =
     0, // tostr
     0, //copy
     &unpack_obj_iter,  //unpack,
@@ -156,13 +190,13 @@ const struct obtype OBJITERTYPE = {
 
 object* init_obj_iter(const object*o){
     //typesafe, doesnt need checks
-    obj_iterator* new_iter = (obj_iterator*)malloc(sizeof(obj_iterator));
+    obj_iterator* new_iter = (obj_iterator*)dulalloc(sizeof(obj_iterator));
     new_iter->refcnt = 1;
     new_iter->type = &OBJITERTYPE;
     new_iter->obj = (single_ob*)o;
     int i;
-    for(i = 0; i<256 && new_iter->obj->content[i].is_valid; ++i);
-    if(i == 256){
+    for(i = 0; i<((single_ob*)o)->cap && !new_iter->obj->content[i].name; ++i);
+    if(i == ((single_ob*)o)->cap){
         //empty
         free(new_iter);
         return 0;
@@ -177,8 +211,8 @@ object* obj_iter_next(object*iter){
     do{
         i->pos++;
         
-    }while(i->pos < 256 && i->obj->content[i->pos].is_valid);
-    if(i->pos == 256){
+    }while(i->pos < i->obj->cap && !i->obj->content[i->pos].name);
+    if(i->pos == i->obj->cap){
         free(i);
         return 0;
     }
@@ -187,8 +221,7 @@ object* obj_iter_next(object*iter){
 
 object* unpack_obj_iter   (const object*i){
     obj_iterator*iter = (obj_iterator*)i;
-    char*name = iter->obj->content[iter->pos].name;
-    return strfromchar(name);
+    return iter->obj->content[iter->pos].name;
 }
 
 char ob_contains_field  (const object*self, const object*other){
@@ -196,5 +229,5 @@ char ob_contains_field  (const object*self, const object*other){
         return 0;
     }
     dulstring* str = (dulstring*)other;
-    return ob_subscr_get(self, str->content) != 0;
+    return ob_subscr_get(self, str) != 0;
 }

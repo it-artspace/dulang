@@ -7,13 +7,15 @@
 //
 
 #include "../api.h"
+
+
 const struct obtype BOOLTYPE = {
     "boolean",
     &dumpbool
 };
 
 char* dumpbool(object*self){
-    char* str = (char*)malloc(16);
+    char* str = (char*)dulalloc(16);
     strcpy(str, "");
     if(((dulbool*)self)->val)
         strcpy(str, "true");
@@ -23,9 +25,10 @@ char* dumpbool(object*self){
 }
 
 object* boolfromlexem(char*src){
-    dulbool* newbool = (dulbool*)malloc(sizeof(dulbool));
+    dulbool* newbool = (dulbool*)dulalloc(sizeof(dulbool));
     newbool->refcnt = 0;
     newbool->type = &BOOLTYPE;
     newbool->val = src?1:0;
     return (object*)newbool;
 }
+

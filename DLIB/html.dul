@@ -1,0 +1,43 @@
+fun createNode(tag)
+    return object{
+        this.tag = tag
+        this.children = array()
+        this.style = object()
+        this.div = fun(init_func)
+            new_elem = object(this)(init_func)
+            new_elem.tag = "div"
+            new_elem.children = array()
+            this.children.append(new_elem)
+        this.render = fun()
+            str_acc = "<" + this.tag + " style='"
+            for prop in this.style
+                str_acc += prop + ":" + this.style[prop] + ";"
+            str_acc += "'"
+            if this.onclick
+                str_acc += " onclick='" + this.onclick + "'"
+            str_acc += ">"
+            if this.text
+                str_acc += this.text
+            for i in this.children
+                str_acc += i.render()
+            str_acc += "</" + this.tag + ">"
+            return str_acc
+        this.click = fun(jstext)
+            this.onclick = jstext
+    }
+
+
+fun Document()
+    obj = this.createNode("html")
+    node = this.createNode("head")
+    obj.head = node
+    obj.children.append(node)
+    body = this.createNode("body")
+    obj.children.append(body)
+    obj.body = body
+    return obj
+
+
+
+
+

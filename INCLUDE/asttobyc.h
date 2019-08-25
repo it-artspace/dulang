@@ -20,7 +20,7 @@ void write_node(funcobject* writer, astnode*);
 void write_if(funcobject*, astnode*);
 void write_for(funcobject*, astnode*);
 funcobject* init_func(const funcobject*);
-
+void write_expression(exprobject*, funcobject*, astnode*);
 
 enum opcodes {
     load_outer,
@@ -68,7 +68,9 @@ enum opcodes {
      */
     import,
     op_contains,
-    unpack_tuple //arg is the number of elems to unpack, is unpacked reversly
+    unpack_tuple,//arg is the number of elems to unpack, is unpacked reversly
+    ret_from_expr,
+    pack_module
 };
 
 /*

@@ -44,7 +44,9 @@ enum asttype {
     DULRETURN,
     MODULE,
     UNPACK_ITER,
-    IMPORT
+    IMPORT,
+    EXPR,
+    WHILE
 };
 
 typedef struct _an{

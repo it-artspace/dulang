@@ -38,7 +38,7 @@ void set_attr(object*t, const char*key, object*val){
 
 
 object* new_classob(void){
-    classob* new_object = (classob*)malloc(sizeof(classob) + 256*32);
+    classob* new_object = (classob*)dulalloc(sizeof(classob) + 256*32);
 
     for(int i = 0; i<256; ++i){
         new_object->table[i].mark = DXEMPTY;

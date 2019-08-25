@@ -18,6 +18,18 @@ typedef struct {
     object** items;
 } dularray;
 
+extern const struct obtype ARRTYPE;
+extern const struct obtype ARRITER;
+object* array_subscr_get(object*, object*);
+void array_subscr_set(object*, object*, object*);
+METHOD_DECL(length);
+METHOD_DECL(append);
+struct arr_iter{
+    ObHead
+    dularray * arr;
+    dulnumber * pos;
+};
+
 
 
 #endif /* array_h */
