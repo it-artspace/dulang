@@ -81,7 +81,13 @@ object* numfromdouble(double val){
 
 char* dumpnumber(object* num){
     char*nstr = (char*)dulalloc(100);
-    sprintf(nstr, "%lf", ((dulnumber*)num)->val);
+    double d;
+    double number = modf(((dulnumber*)num)->val, &d);
+    if(fabs(number) < 0.00001){
+        sprintf(nstr, "%ld", (long)d);
+    } else {
+        sprintf(nstr, "%lf", ((dulnumber*)num)->val);
+    }
     return nstr;
 }
 void num_dealloc(object*o){}

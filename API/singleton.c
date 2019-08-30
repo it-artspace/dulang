@@ -7,6 +7,47 @@
 //
 
 #include "../api.h"
+char * dump_method(object*m){
+    char * mem = malloc(50);
+    dulmethod * method = (dulmethod*)m;
+    sprintf(mem, "method at %lX bound to %lX", (size_t)method->executable, (size_t)method->instance);
+    return mem;
+}
+
+void destroy_method(object * m){
+    dulmethod * method = (dulmethod*)m;
+    DECREF(method->executable);
+    DECREF(method->instance);
+}
+const struct obtype METHODTYPE = {
+    "method",
+    &dump_method, //dump
+    0, //alloc
+    0, //dealloc
+    0, //+
+    0, //-
+    0, // *
+    0, // /
+    0, // +=
+    0, // -=
+    0, // *=
+    0, // /=
+    0, // <
+    0, // >
+    0, // ==
+    0, // <=
+    0, // >=
+    0, // f()
+    0, // a in b
+    0, //init_iter (collection initializes iter)
+    0, //next_iter
+    0, // [0]
+    0, // [0] =
+    0, // tostr
+    0, //copy
+    0,  //unpack,
+    method_id //typeid
+};
 
 char fast_str_check(object * str1, object *str2){
     dulstring * s1 = (dulstring*)str1;
@@ -49,6 +90,16 @@ object* ob_subscr_get   (const object*self, object * s_name){
 
 void ob_subscr_set(object*self, object*name, object*target){
     INCREF(target);
+    if(target->type->type_id == func_id){
+        //bin methods cannot be assigned here
+        dulmethod * method = ob_alloc(sizeof(dulmethod));
+        method->refcnt = 1;
+        method->instance = self;
+        method->executable = target;
+        method->type = &METHODTYPE;
+        INCREF(self);
+        target = (object*)method;
+    }
     INCREF(name);
     single_ob* table = (single_ob*)self;
     char * rname = ((dulstring*)name)->content;
@@ -121,20 +172,29 @@ const struct obtype SINOBTYPE = {
     0, // tostr
     0, //copy
     0,  //unpack,
-    0
+    object_id
 };
+
 
 char*   dump_object     (object*self){
     single_ob* s = (single_ob*)self;
+    if(s->count == 0)
+        return strdup("{}");
     char* dump = (char*)dulalloc(10000);
     char*writer = dump;
     writer+= sprintf(writer, "{");
     for(int i = 0; i<s->cap;++i){
-        if(s->content[i].member){
+        if(s->content[i].name){
             writer+= sprintf(writer, "%s: ", ((dulstring*)s->content[i].name)->content);
-            char*localdump = s->content[i].member->type->dump(s->content[i].member);
-            writer+= sprintf(writer, "%s, ", localdump);
-            free(localdump);
+            object * member = s->content[i].member;
+            if(member->type->dump){
+                char*localdump = s->content[i].member->type->dump(s->content[i].member);
+                writer+= sprintf(writer, "%s, ", localdump);
+                free(localdump);
+            } else {
+                writer+= sprintf(writer, "%s at %p, ", member->type->name, member);
+            }
+            
         }
         
         
@@ -184,8 +244,7 @@ const struct obtype OBJITERTYPE = {
     0, // tostr
     0, //copy
     &unpack_obj_iter,  //unpack,
-    0, //method
-    0
+    -1
 };
 
 object* init_obj_iter(const object*o){

@@ -22,6 +22,7 @@ object* concatstr(object*, object*);
 object* allocstr(void);
 void destrstr(object*);
 int strleng(object*);
+object * str_iadd(object * left, object * right);
 char* dumpstr(object*self);
 object* strfromchar(char*);
 object* getSubstring(object*str, int posstart, int posend);

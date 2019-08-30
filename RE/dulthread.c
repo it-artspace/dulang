@@ -25,7 +25,7 @@ int exec_coro(struct _crt*coroutine){
             if(exec_context(c)){
                 //context is finished
                 context* next = c->return_to;
-                destroy_context(c);
+                //destroy_context(c);
                 if(next)
                     coroutine->sttop = next;
                 else {
@@ -54,7 +54,6 @@ struct _crt * start_coro( struct thread* thr, funcobject* func ) {
     coro->state  = coro_running;
     context* ctx = init_context( func, coro );
     (void) ctx;
-
     if( thr->workload ++ == 0 ) {
         // First coroutine
         thr->current = coro;

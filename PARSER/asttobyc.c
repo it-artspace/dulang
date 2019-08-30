@@ -104,7 +104,7 @@ void load_func_process_storenames( astnode* current, funcobject* currfunc, funco
                 break;
             }
         }
-        int is_this = !strcmp(name, "this");
+        int is_this = (strcmp(name, "this") == 0);
         if( found_val && !is_reserved && !is_this)
         {
             // Generate prologue for captured variables
@@ -331,23 +331,8 @@ void write_node(funcobject* writer, astnode*node){
             load_func(writer, node);
             break;
         case NAME:{
-            int is_reserved = 0;
-            for(int _i = 0; _i<bin_count; ++_i){
-                if(strcmp((char*)node->val, bins[_i]->name) == 0){
-                    is_reserved = 1;
-                    break;
-                }
-            }
-            int  is_this = strcmp((char*)node->val, "this") == 0;
-            if( is_reserved ) {
-                write_op(writer, load_name, nametable_lookup(writer, (char*)node->val));
-            } else if( is_this ) {
-                write_op(writer, load_name, nametable_lookup(writer, (char*)node->val));
-            } else {
-                int found_val = find_name_recursively(writer->outer_scope, (char*)node->val);
-                
-                    write_op(writer, load_name, nametable_lookup(writer, (char*)node->val));
-            }
+            int nameindex = nametable_lookup(writer, (char*)node->val);
+            write_op(writer, load_name, nameindex);
         }   break;
         case COMPOUND:
             do{
@@ -484,7 +469,7 @@ void write_node(funcobject* writer, astnode*node){
             name = strtok(name, ".");
             add_name(writer, name);
             write_op(writer, store_name, nametable_lookup(writer, name));
-            free(name);
+            //free(name);
         } break;
         case LESSTHAN:{
             write_node(writer, node->children[0]);

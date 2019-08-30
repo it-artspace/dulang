@@ -10,6 +10,7 @@
 #define dulthread_h
 
 #include "../api.h"
+#include <pthread.h>
 //#include "../RE/RE_special.h"
 extern FILE* output;
 
@@ -24,6 +25,7 @@ struct thread{
     int workload;
     int needs_to_stop;
     int has_stopped;
+    pthread_mutex_t mutex;
     struct _crt{
         struct _crt*next;
         struct _crt*prev;

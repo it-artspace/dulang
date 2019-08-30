@@ -26,7 +26,9 @@ enum type_ids {
     func_id,
     range_id,
     iter_id,
-    bin_func
+    bin_func_id,
+    bin_m_id,
+    method_id
 };
 struct _crt;
 typedef struct {object **aptr; int a_passed;} binarg;

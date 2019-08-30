@@ -33,8 +33,8 @@ const char * cmds [] = {
     "compile"
 };
 
-void import_module(char*fname){
-    if(!strstr(fname, "/")){
+object* import_module(char*fname){
+    if(fname[0]!='/'){
         //need to glue to build_dir
         char* fullname = malloc(strlen(build_dir) + strlen(fname) + 1);
         sprintf(fullname, "%s/%s", build_dir, fname);
@@ -48,7 +48,7 @@ void import_module(char*fname){
     FILE*f = fopen(fname, "r");
     if(!f){
         fprintf(stderr, "cannot open file %s, aborting", fname);
-        return;
+        return 0;
     }
     char rdbuf [1024];
     fgets(rdbuf, 1024, f);
@@ -67,7 +67,7 @@ void import_module(char*fname){
         binfptr fp = dlsym(lib, rdbuf);
         if(!fp){
             fprintf(stderr, "cannot find %s function in module %s, aborting", rdbuf, modname);
-            return;
+            return 0;
         }
         
         builtin_func* to_enplace = (builtin_func*)dulalloc(sizeof(builtin_func));
@@ -76,14 +76,15 @@ void import_module(char*fname){
         to_enplace->type = &BINTYPE;
         to_enplace->refcnt = 1;
         to_enplace->name = strdup(rdbuf);
-        ob_subscr_set((object*)obj, rdbuf, (object*)to_enplace);
+        ob_subscr_set((object*)obj, strfromchar(rdbuf), (object*)to_enplace);
     }
-    ob_subscr_set(mods, modname, (object*)obj);
-    
+    ob_subscr_set(mods, strfromchar(modname), (object*)obj);
+    fclose(f);
+    return obj;
 }
 
 void launch_file(char*fname){
-    if(access(fname, F_OK) ==-1){
+    if(fname[0]!='/'){
         //need to glue to build_dir
         char* fullname = malloc(strlen(build_dir) + strlen(fname) + 1);
         sprintf(fullname, "%s/%s", build_dir, fname);
@@ -102,9 +103,10 @@ void launch_file(char*fname){
     struct _crt* newcoro = start_coro(current_thread, f);
     context* created = newcoro->sttop;
     object** vars = created->vars;
+    pthread_mutex_lock(&workload_lock);
     current_thread->current = newcoro;
     fprintf(output, "launching module %s...\n\n", bname);
-    pthread_mutex_lock(&workload_lock);
+    
     pthread_cond_signal(&workload_cond);
     pthread_mutex_unlock(&workload_lock);
     

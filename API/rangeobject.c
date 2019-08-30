@@ -87,6 +87,6 @@ object* range_iter_next(object* iter){
     return iter;
 }
 
-object* unpack_range_iter   (const object*iter){
+object* unpack_range_iter   (object*iter){
     return (object*)((range_iter*)iter)->pos;
 }

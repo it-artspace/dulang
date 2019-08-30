@@ -1,0 +1,15 @@
+import "server.ffi"
+app = object{
+    this.router = object()
+    this.launch = fun()
+        server.__listen()
+        while true
+            accept = server.__accept()
+            if accept
+                conn, path, params = accept
+                res = this.router[path](params)
+                server.__finalize(conn, res)
+    this.sendPage = server.page_send
+}
+
+

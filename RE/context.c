@@ -119,6 +119,29 @@ int exec_context(context*ctx){
                 fprintf(stderr, "null pointer exception: cannot invoke a nulled object\n");
                 break;
             }
+            if(sttop->type->type_id == method_id){
+                object * fun = ((dulmethod*)sttop)->executable;
+                object * self = ((dulmethod*)sttop)->instance;
+                if(fun->type->type_id == func_id){
+                    context* c = init_context((funcobject*)fun, ctx->coroutine);
+                    //*++ctx->stackptr = 0;
+                    //object* args = *--ctx->stackptr;
+                    if(((funcobject*)fun)->argcount != _op->arg){
+                        fprintf(stderr, "in function %d parameter passed but %d expected\n",
+                                _op->arg, ((funcobject*)fun)->argcount);
+                    }
+                    for(int i = ((funcobject*)fun)->argcount - 1; i>=0; --i){
+                        
+                        c->vars[i] = *--ctx->stackptr;
+                    }
+                    for(int i = 0; i<((funcobject*)fun)->namecount; ++i)
+                        if(strcmp(((funcobject*)fun)->varnames[i], "this")==0){
+                            INCREF(self);
+                            c->vars[i] = self;
+                            c->this_ptr = self;
+                        }
+                }
+            }
             if(sttop->type == &EXPRTYPE){
                 exprobject* expr = (exprobject*)sttop;
                 expr->return_to = ctx->inst_pointer;
@@ -127,7 +150,7 @@ int exec_context(context*ctx){
                 ctx->stop_ptr = expr->ops + expr->bytecount;
                 break;
             }
-            if(sttop->type == &FUNCTYPE){
+            if(sttop->type->type_id == func_id){
                 context* c = init_context((funcobject*)sttop, ctx->coroutine);
                 //*++ctx->stackptr = 0;
                 //object* args = *--ctx->stackptr;
@@ -139,7 +162,7 @@ int exec_context(context*ctx){
                     c->vars[i] = *--ctx->stackptr;
                 
             }
-            if(sttop->type == &BINTYPE){
+            if(sttop->type->type_id == bin_func_id){
                 
                 builtin_func* f = (builtin_func*)sttop;
                 binarg Args = {ctx->stackptr -= _op->arg, _op->arg};
@@ -147,9 +170,23 @@ int exec_context(context*ctx){
                 //DECREF(args);
                 
             }
+           
             if(strcmp(sttop->type->name, "object")==0){
+                if(_op->arg == 0){
+                    //is invoked as constructor
+                    object * o = new_ob();
+                    single_ob * self = (single_ob*)sttop;
+                    for(int i = 0; i< self->cap; ++i){
+                        if(self->content[i].name){
+                            ob_subscr_set(o, self->content[i].name, self->content[i].member);
+                        }
+                    }
+                    *ctx->stackptr++ = o;
+                    break;
+                }
                 object* args = *--ctx->stackptr;
                 /*Это костыль*/
+                
                 funcobject* r_func_arg = (funcobject*)args;
                 //dumpfunc(r_func_arg);
                 context* c = init_context(r_func_arg, ctx->coroutine);
@@ -252,6 +289,9 @@ int exec_context(context*ctx){
                     dulstring* s = (dulstring*)method_name;
                     object* method_ob = self->type->subscript_get(self, s);
                     //methodob typecheck
+                    if(!method_ob){
+                        break;
+                    }
                     if(strcmp(method_ob->type->name, "builtin")==0){
 #warning TODO: this pass
                         binarg a;
@@ -259,6 +299,9 @@ int exec_context(context*ctx){
                         a.aptr = ctx->stackptr -= a.a_passed;
                         *ctx->stackptr++ = ((builtin_func*)method_ob)->func_pointer(a, ctx->coroutine);
                         break;
+                    }
+                    if(method_ob->type->type_id == method_id){
+                        method_ob = ((dulmethod*)method_ob)->executable;
                     }
                     if(strcmp(method_ob->type->name, "functional object")==0){
                         context* c = init_context((funcobject*)method_ob, ctx->coroutine );
@@ -365,6 +408,7 @@ int exec_context(context*ctx){
             //get the name
             char*modname = ((dulstring*)*--ctx->stackptr)->content;
             char mnamebuf [100];
+            //first search in this dir, then in DLIB
             if(access(modname, F_OK)==-1){
                 sprintf(mnamebuf, "DLIB/%s", modname);
                 modname = mnamebuf;
@@ -372,9 +416,10 @@ int exec_context(context*ctx){
             if(strstr(modname, ".dul")){
                 funcobject * f = file_to_fo(modname);
                 context * c = init_context(f, ctx->coroutine);
-                modname = strtok(modname, ".");
+                
             } else {
-                import_module(modname);
+               
+                *ctx->stackptr++ = import_module(modname);
             }
             /*object* mod = getmodule(modname);
             if(!mod){

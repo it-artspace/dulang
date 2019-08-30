@@ -30,5 +30,6 @@
 #include "INCLUDE/array.h"
 #include "INCLUDE/channel.h"
 #include "INCLUDE/asttoJS.h"
+#include "INCLUDE/dulmethod.h"
 
 #endif /* api_h */

@@ -26,6 +26,6 @@ typedef struct {
 
 object* init_range_iter     (const object*);
 object* range_iter_next     (object*);
-object* unpack_range_iter   (const object*);
+object* unpack_range_iter   (object*);
 extern const struct obtype RANGEOBJECTTYPE;
 #endif /* rangeobject_h */

@@ -26,17 +26,15 @@ fun createNode(tag)
             this.onclick = jstext
     }
 
-
 fun Document()
-    obj = this.createNode("html")
-    node = this.createNode("head")
+    obj = createNode("html")
+    node = createNode("head")
     obj.head = node
     obj.children.append(node)
-    body = this.createNode("body")
+    body = createNode("body")
     obj.children.append(body)
     obj.body = body
     return obj
-
 
 
 

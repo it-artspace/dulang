@@ -8,35 +8,7 @@
 
 #include "../api.h"
 
-object* __bin_tuple_map(object*s, binarg A, struct _crt* coro){
-    if(A.a_passed > 1){
-        fprintf(stderr, "only one argument expected at tuple-map method");
-        return 0;
-    }
-    bundle*self = (bundle*)s;
-    
-    object* arg = *A.aptr;
-    if(strcmp(arg->type->name, "functional object") == 0){
-        funcobject*f = (funcobject*)arg;
-        bundle* nb = (bundle*)dulalloc(sizeof(bundle) + sizeof(object*)*self->count);
-        nb->refcnt = 0;
-        nb->type = &BUNDLETYPE;
-        nb->count = self->count;
-        for(int i = 0; i<self->count; ++i){
-            context*c = init_context(f, coro);
-            while(c->inst_pointer != c->stop_ptr)
-                exec_context(c);
-            //here it returns
-        }
-        
-        return (object*)nb;
-    }
-    fprintf(stderr, "object of unexpected type %s forwarded to map-method", arg->type->name);
-    return 0;
-    
-    
-   
-}
+
 
 object* tuple_sub_get(object*self, object*pos){
     if(!pos || pos->type->type_id != number_id)
@@ -62,7 +34,19 @@ void tuple_sub_set(object*self, object*pos, object*val){
 }
 
 
-
+object* mktuple_va(int num, ...){
+    bundle * t = malloc(sizeof(bundle) + num * sizeof(object*));
+    t->count = num;
+    t->refcnt = 0;
+    t->type = &BUNDLETYPE;
+    va_list ap;
+    va_start(ap, num);
+    for(int i = 0; i<num; ++i){
+        t->items[i] = va_arg(ap, object*);
+    }
+    va_end(ap);
+    return (object*)t;
+}
 
 
 

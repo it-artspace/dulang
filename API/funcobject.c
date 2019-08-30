@@ -59,22 +59,32 @@ void destroy_func(object*f){
 
 const struct obtype FUNCTYPE = {
     "functional object",
-    &dumpfunc,
-    0,
-    &destroy_func,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
+    &dumpfunc, //dump
+    0, //alloc
+    &destroy_func, //dealloc
+    0, //+
+    0, //-
+    0, // *
+    0, // /
+    0, // +=
+    0, // -=
+    0, // *=
+    0, // /=
+    0, // <
+    0, // >
+    0, // ==
+    0, // <=
+    0, // >=
+    0, // f()
+    0, // a in b
+    0, //init_iter (collection initializes iter)
+    0, //next_iter
+    0, // [0]
+    0, // [0] =
+    0, // tostr
+    0, //copy
+    0,  //unpack,
+    func_id //typeid
 };
 
 void fsetup(funcobject*f){

@@ -23,5 +23,5 @@ void launch_file(char*fname);
 funcobject * file_to_fo(char * fname);
 
 //only for FFI
-void import_module(char*fname);
+object* import_module(char*fname);
 #endif /* buildscript_h */

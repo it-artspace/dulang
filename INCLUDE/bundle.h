@@ -16,6 +16,7 @@ typedef struct {
 } bundle;
 
 object* _mktuple(object** stackptr, int num);
+object* mktuple_va(int num, ...);
 void destr_tuple(object*);
 char* dump_tuple(object*);
 object* tuple_method(object*, const char*, object*);

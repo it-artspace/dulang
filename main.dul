@@ -1,17 +1,12 @@
+import "http.dul"
 import "html.dul"
-doc = html.Document()
-title = html.createNode("title")
-title.text = "my title"
-doc.head.children.append(title)
-doc.body.div{
-	this.width = "100vw"
-	this.text = "sometext"
-	this.style = object{
-#style object captured
-		this["background-color"] = "blue"
-		this.color = "white"
+app = http.app
+app.router["/"] = fun(req)
+	return app.sendPage("/Users/jernicozz/Downloads/intsys/index.html")
+app.router["/gen"] = fun(req)
+	doc = html.Document()
+	doc.body.div{
+		this.text = "Привет из dulang"
 	}
-	this.click("this.style.color='black'")
-}
-write doc.render()
-
+	return doc.render()
+app.launch()

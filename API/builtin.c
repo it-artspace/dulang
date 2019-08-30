@@ -11,8 +11,36 @@
 
 
 const struct obtype BINTYPE = {
-    "builtin"
+    "builtin",
+    0, //dump
+    0, //alloc
+    0, //dealloc
+    0, //+
+    0, //-
+    0, // *
+    0, // /
+    0, // +=
+    0, // -=
+    0, // *=
+    0, // /=
+    0, // <
+    0, // >
+    0, // ==
+    0, // <=
+    0, // >=
+    0, // f()
+    0, // a in b
+    0, //init_iter (collection initializes iter)
+    0, //next_iter
+    0, // [0]
+    0, // [0] =
+    0, // tostr
+    0, //copy
+    0,  //unpack,
+    bin_func_id//typeid
 };
+
+
 
 
 
@@ -144,46 +172,7 @@ object* __bin_range_(object*args, struct _crt * coro){
     return (object*)r;
 }
 
-object* __bin_object(binarg Args, struct _crt*coro){
-    if(Args.a_passed == 0)
-        return new_ob();
-    if(Args.a_passed == 1 && strcmp(Args.aptr[0]->type->name, "functional object")==0){
-        //initialized with lambda
-        object* obj = new_ob();
-        funcobject* r_func_arg = (funcobject*)Args.aptr[0];
-        context* c = init_context(r_func_arg, coro);
-        int this_pos = -1;
-        for(int i = 0; i<r_func_arg->namecount; ++i){
-            if(strcmp("this", r_func_arg->varnames[i]) == 0){
-                this_pos = i;
-                break;
-            }
-        }
-        
-        if(this_pos!=-1){
-            c->vars[this_pos] = obj;
-            c->this_ptr = obj;
-        }
-        return obj;
-    } else {
-        object* obj = new_ob();
-        for(int i = 0; i<Args.a_passed; ++i){
-            if(strcmp(Args.aptr[i]->type->name, "object")!=0){
-                fprintf(stderr, "cannot inherit object from %s type", Args.aptr[i]->type->name);
-                obj_dealloc(obj);
-                return 0;
-            }
-            single_ob* o = (single_ob*)Args.aptr[i];
-            for(int prop_index = 0; prop_index<o->cap; ++prop_index){
-                if(o->content[prop_index].name){
-                    object* m = o->content[prop_index].member;
-                    ob_subscr_set(obj, o->content[prop_index].name, m);
-                }
-            }
-        }
-        return obj;
-    }
-}
+
 
 
 object* __bin_str       (binarg Args, struct _crt *_){
