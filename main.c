@@ -35,11 +35,15 @@ int exec( char* inpuf )
 
 pthread_mutex_t workload_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t workload_cond = PTHREAD_COND_INITIALIZER;
+volatile int final_context = 0;
+
 
 void workloop(void*a){
     while(1){
         pthread_mutex_lock(&workload_lock);
         while(!current_thread->workload){
+            if(final_context)
+                exit(0);
             pthread_cond_wait(&workload_cond, &workload_lock);
         }
         while(current_thread->workload)
@@ -49,11 +53,6 @@ void workloop(void*a){
 }
 
 int main(int argc, const char * argv[]) {
-    char * myname = strdup(argv[0]);
-    char namebuf [100];
-    //strcpy(namebuf, dirname(myname));
-    strcat(namebuf, "/addr");
-    strcpy(namebuf, "/Users/jernicozz/user_space/491569002/addr");
     init_mods();
     pthread_t work_tid;
     pthread_attr_t attrs;
@@ -103,6 +102,7 @@ int main(int argc, const char * argv[]) {
             exec( inpuf );
         }
     }
+    final_context = 1;
     pthread_join(work_tid, 0);
     return 0;
 #endif

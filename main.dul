@@ -1,12 +1,5 @@
 import "http.dul"
-import "html.dul"
-app = http.app
-app.router["/"] = fun(req)
-	return app.sendPage("/Users/jernicozz/Downloads/intsys/index.html")
-app.router["/gen"] = fun(req)
-	doc = html.Document()
-	doc.body.div{
-		this.text = "Привет из dulang"
-	}
-	return doc.render()
-app.launch()
+#app = http.app
+#app.router["/"] = fun(req)
+#return app.sendPage("/Users/jernicozz/Downloads/intsys/index.html")
+#app.launch()
