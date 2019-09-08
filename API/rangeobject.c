@@ -62,7 +62,7 @@ const struct obtype RANGEOBJECTTYPE = {
         &init_range_iter
 };
 
-object* init_range_iter(const object* r){
+object* init_range_iter(object* r){
     range_iter* i = (range_iter*)malloc(sizeof(range_iter));
     i->refcnt = 1;
     i->type = &RANGEITERTYPE;

@@ -525,6 +525,21 @@ void write_node(funcobject* writer, astnode*node){
             int name_index = nametable_lookup(writer, (char*)node->children[0]->val);
             write_op(writer, op_inpl_add, name_index);
         }break;
+        case OBJECT:{
+            write_op(writer, push_object, 0);
+            for(astnode** child = node->children[1]->children; child!=node->children[1]->children+node->children[1]->children_count; ++child){
+                if((*child)->type != ASSIGN || (*child)->children[0]->type != NAME){
+                    //crash
+                    fprintf(stderr, "incorrect member declaration");
+                    exit(0);
+                }
+                write_node(writer, (*child)->children[1]);
+                write_node(writer, (*child)->children[0]);
+                write_op(writer, _subscr_set, -1);
+            }
+            if(node->children[0]->val)
+                write_op(writer, store_name, nametable_lookup(writer, node->children[0]->val));
+        }break;
         default:
             break;
     }

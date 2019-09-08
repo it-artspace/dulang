@@ -43,7 +43,9 @@ const char* astnames[] = {
     "UNPACK_ITER",
     "IMPORT",
     "EXPR",
-    "WHILE"
+    "WHILE",
+    "CLASS",
+    "OBJECT"
 };
 
 void		astnode_emplace_va 	( astnode* parent, astnode* node, enum asttype type, int capacity, int children, va_list va )

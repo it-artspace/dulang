@@ -11,7 +11,7 @@
 struct thread work_pool[numthreads];
 
 struct thread*less_loaded = work_pool;
-volatile struct thread*current_thread = work_pool;
+volatile __thread struct thread*current_thread = work_pool;
 
 
 void destroy_coro(struct _crt*c){

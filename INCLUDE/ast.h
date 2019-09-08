@@ -46,7 +46,9 @@ enum asttype {
     UNPACK_ITER,
     IMPORT,
     EXPR,
-    WHILE
+    WHILE,
+    CLASS,
+    OBJECT
 };
 
 typedef struct _an{

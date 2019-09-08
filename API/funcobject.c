@@ -50,7 +50,8 @@ const char *opcode_repres_ [] =  {
     "contains",
     "unpack",
     "expr_stop",
-    "pack_mod"
+    "pack_mod",
+    "push_object"
 };
 
 void destroy_func(object*f){

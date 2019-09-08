@@ -37,7 +37,7 @@ struct thread{
 #define flush_stdout
 extern struct thread work_pool[numthreads];
 extern struct thread*less_loaded;
-extern volatile struct thread*current_thread;
+extern volatile __thread struct thread*current_thread;
 int exec_thread(void);
 //returns 0 on finish
 

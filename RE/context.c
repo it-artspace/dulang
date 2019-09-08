@@ -199,9 +199,11 @@ int exec_context(context*ctx){
                     }
                 }
                 
-                if(this_pos != -1)
+                if(this_pos != -1){
                     c->vars[this_pos] = (object*)sttop;
-                c->this_ptr      = sttop;
+                    c->this_ptr      = sttop;
+                    
+                }
             }
         } break;
         case dulreturn:
@@ -287,7 +289,7 @@ int exec_context(context*ctx){
                 //try to get as member
                 if(strcmp(method_name->type->name, "string")==0){
                     dulstring* s = (dulstring*)method_name;
-                    object* method_ob = self->type->subscript_get(self, s);
+                    object* method_ob = self->type->subscript_get(self, (object*)s);
                     //methodob typecheck
                     if(!method_ob){
                         break;
@@ -332,7 +334,7 @@ int exec_context(context*ctx){
                 a.a_passed = _op->arg;
                 a.aptr = ctx->stackptr -= a.a_passed;
                 dulstring* m_name_casted = (dulstring*)method_name;
-                bin_method* bin_method_ = (bin_method*)ob_subscr_get(self->type->get_methods(), m_name_casted);
+                bin_method* bin_method_ = (bin_method*)ob_subscr_get(self->type->get_methods(), (object*)m_name_casted);
                 *ctx->stackptr++ = bin_method_->func_pointer(self, a);
             }
             
@@ -350,6 +352,8 @@ int exec_context(context*ctx){
             object*val = *--ctx->stackptr;
             if(o)
                 o->type->subscript_set(o, subscribant, val);
+            if(_op->arg == -1)
+                *ctx->stackptr++ = o;
         }break;
         case assign_many : {
             

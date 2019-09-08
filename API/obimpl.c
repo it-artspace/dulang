@@ -6,7 +6,6 @@
 //  Copyright © 2019 Дмитрий Маслюков. All rights reserved.
 //
 
-
 #include "../api.h"
 #include <sys/mman.h>
 #define align(size) ((size & 0xfffffffffffffff8) + 8)
@@ -47,11 +46,11 @@ void setup_aa(){
 void ob_dealloc(object*ob){
     if(ob->type->dealloc){
         ob->type->dealloc(ob);
-        if(ob->type->type_id == number_id){
-            dulfree_ob(ob);
-        } else {
-            free(ob);
-        }
+    }
+    if(ob->type->type_id == number_id){
+        dulfree_ob(ob);
+    } else {
+        free(ob);
     }
 }
 

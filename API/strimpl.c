@@ -43,17 +43,7 @@ object* get_str_methods(void){
 }
 
 
-object* getsubstr_method_wrapper(object*self, object*Args){
-    if(strcmp(Args->type->name, "tuple") == 0){
-        
-    }
-    if(strcmp(Args->type->name, "number") == 0){
-        
-        return getSubstring(self, ((dulnumber*)Args)->val, ((dulstring*)self)->len);
-    }
-    fprintf(stderr, "wrong argument types for string method substring\n");
-    return 0;
-}
+
 
 
 char eq_str(object*left, object*right){

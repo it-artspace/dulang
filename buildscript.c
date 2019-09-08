@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-static char * build_dir = "/Users/jernicozz/Documents/Niolang/";
+static char * build_dir = "/Users/jernicozz/Documents/_Dulang/Niolang/";
 //first place to lookup files with non-absolute path
 
 static object* mods;
@@ -36,7 +36,7 @@ const char * cmds [] = {
 object* import_module(char*fname){
     if(fname[0]!='/'){
         //need to glue to build_dir
-        char* fullname = malloc(strlen(build_dir) + strlen(fname) + 1);
+        char* fullname = malloc(strlen(build_dir) + strlen(fname) + 2);
         sprintf(fullname, "%s/%s", build_dir, fname);
         fname = fullname;
     } else {
@@ -44,7 +44,6 @@ object* import_module(char*fname){
         build_dir = dirname(b);
     }
     single_ob* obj = (single_ob*)new_ob();
-    
     FILE*f = fopen(fname, "r");
     if(!f){
         fprintf(stderr, "cannot open file %s, aborting", fname);
@@ -59,7 +58,7 @@ object* import_module(char*fname){
     fprintf(output, "importing module %s...\n\n", rdbuf);
     fgets(rdbuf, 1024, f);
     strtok(rdbuf, "\n");
-    void* lib = dlopen(rdbuf, RTLD_LAZY);
+    void* lib = dlopen(rdbuf, RTLD_NOW);
     if(!lib){
         fprintf(stderr, "cannot open library %s, aborting", rdbuf);
     }
@@ -70,7 +69,7 @@ object* import_module(char*fname){
             return 0;
         }
         
-        builtin_func* to_enplace = (builtin_func*)dulalloc(sizeof(builtin_func));
+        builtin_func* to_enplace = (builtin_func*)malloc(sizeof(builtin_func));
         
         to_enplace->func_pointer = fp;
         to_enplace->type = &BINTYPE;
@@ -80,7 +79,7 @@ object* import_module(char*fname){
     }
     ob_subscr_set(mods, strfromchar(modname), (object*)obj);
     fclose(f);
-    return obj;
+    return (object*)obj;
 }
 
 void launch_file(char*fname){
@@ -102,7 +101,6 @@ void launch_file(char*fname){
     char* bname = strtok(basename(strdup(fname)), ".");
     struct _crt* newcoro = start_coro(current_thread, f);
     context* created = newcoro->sttop;
-    object** vars = created->vars;
     pthread_mutex_lock(&workload_lock);
     current_thread->current = newcoro;
     fprintf(output, "launching module %s...\n\n", bname);
@@ -158,7 +156,7 @@ object* getmodule(char*name){
 funcobject * file_to_fo(char * fname){
     if(fname[0]!='/'){
         //need to glue to build_dir
-        char* fullname = malloc(strlen(build_dir) + strlen(fname) + 1);
+        char* fullname = malloc(strlen(build_dir) + strlen(fname) + 2);
         sprintf(fullname, "%s/%s", build_dir, fname);
         fname = fullname;
     } else {

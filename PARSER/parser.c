@@ -249,7 +249,7 @@ enum lexemtype getlexem(dulparser*p){
 			}
         p->strpos++;
         int size = p->strpos-strstart-2;
-		clexem->literal = (char*)dulalloc( size );
+		clexem->literal = (char*)dulalloc( size + 1);
 		strncpy(clexem->literal, p->curstring + strstart+1, p->strpos-strstart-2);
         ((char*)clexem->literal)[size] = '\0';
 		clexem->t = STRLNGLITERAL;
@@ -259,7 +259,17 @@ enum lexemtype getlexem(dulparser*p){
 	}
 	
 	// not string
-	
+    if(p->curstring[p->strpos]=='@'){
+        clexem->t = IDENTIFIER;
+        p->strpos+=1;
+        clexem->literal = strdup("this");
+        p->lexemcount++;
+        clexem++;
+        clexem->sp = dot;
+        clexem->t = SPECIAL;
+        p->lexemcount++;
+        return SPECIAL;
+    }
 	for(int i = 0; i<ltextcount; ++i){
 		if( check_identifier(p->curstring + p->strpos, ltext[i] )) {
 			//success!!

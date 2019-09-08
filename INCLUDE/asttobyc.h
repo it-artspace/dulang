@@ -70,7 +70,8 @@ enum opcodes {
     op_contains,
     unpack_tuple,//arg is the number of elems to unpack, is unpacked reversly
     ret_from_expr,
-    pack_module
+    pack_module,
+    push_object
 };
 
 /*

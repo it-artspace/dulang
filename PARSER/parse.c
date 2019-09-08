@@ -229,6 +229,24 @@ astnode*	parse_statement	( dulparser* parser )
                 }
                 return astnode_new(WHILE, 2, 2, expr, comp);
             }break;
+            case kwobject:{
+                extract_lexem(parser);
+                lexem * name = preview_lexem(parser);
+                astnode * nameNode = astnode_new(NAME, 0, 0);
+                if(name->t == IDENTIFIER){
+                    nameNode->val = strdup(name->literal);
+                    extract_lexem(parser);
+                } else {
+                    nameNode->val = 0;
+                }
+                extract_lexem(parser);
+                astnode* body = parse_compound(parser);
+                if(!body){
+                    parse_error_at(preview_lexem(parser), "expected object body");
+                    return 0;
+                }
+                return astnode_new(OBJECT, 2, 2, nameNode, body);
+            }break;
             default:
                 break;
         }

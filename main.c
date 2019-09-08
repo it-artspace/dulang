@@ -38,7 +38,7 @@ pthread_cond_t workload_cond = PTHREAD_COND_INITIALIZER;
 volatile int final_context = 0;
 
 
-void workloop(void*a){
+void* workloop(void*a){
     while(1){
         pthread_mutex_lock(&workload_lock);
         while(!current_thread->workload){
@@ -50,6 +50,7 @@ void workloop(void*a){
             exec_thread();
         pthread_mutex_unlock(&workload_lock);
     }
+    return 0;
 }
 
 int main(int argc, const char * argv[]) {

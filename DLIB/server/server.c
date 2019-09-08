@@ -6,8 +6,8 @@
 //  Copyright © 2019 Дмитрий Маслюков. All rights reserved.
 //
 
-#include "../api.h"
-#include "../INCLUDE/dulthread.h"
+#include "../../api.h"
+#include "../../INCLUDE/dulthread.h"
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -19,49 +19,19 @@
 #include <openssl/err.h>
 #include <pthread.h>
 
-static SSL_CTX * ctx;
+
 static int sockfd;
 static const char * okhdr = "HTTP/1.1 200 OK\r\nContent-length:";
 static const char * okbody = "\r\nContent-Type: %s\r\nConnection: close\r\n\r\n";
-static const char * statdir = "/Users/jernicozz/Downloads/intsys";
-static SSL_CTX *create_context()
-{
-    const SSL_METHOD *method;
-    SSL_CTX *ctx;
-    
-    method = SSLv23_server_method();
-    
-    ctx = SSL_CTX_new(method);
-    if (!ctx) {
-        perror("Unable to create SSL context");
-        ERR_print_errors_fp(stderr);
-        exit(EXIT_FAILURE);
-    }
-    
-    return ctx;
-}
+static const char * statdir = "/Users/jernicozz/Downloads/dulfront/develop";
 
-static void configure_context(SSL_CTX *ctx)
-{
-    SSL_CTX_set_ecdh_auto(ctx, 1);
-    
-    /* Set the key and cert */
-    if (SSL_CTX_use_certificate_file(ctx, "/Users/jernicozz/Documents/NIolang/DLIB/cert.pem", SSL_FILETYPE_PEM) <= 0) {
-        ERR_print_errors_fp(stderr);
-        exit(EXIT_FAILURE);
-    }
-    
-    if (SSL_CTX_use_PrivateKey_file(ctx, "/Users/jernicozz/Documents/NIolang/DLIB/key.pem", SSL_FILETYPE_PEM) <= 0 ) {
-        ERR_print_errors_fp(stderr);
-        exit(EXIT_FAILURE);
-    }
-}
+
 
 BIN_DECL(page_send){
     dulstring * fname = (dulstring*)*Args.aptr;
     dulstring * content = (dulstring*)allocstr();
     FILE* f = fopen(fname->content, "r");
-    size_t ssize = fseek(f, 0, SEEK_END);
+    fseek(f, 0, SEEK_END);
     char bodybuf [100];
     char * ext = strrchr(fname->content, '.') + 1;
     char * mime = "text/html";
@@ -74,15 +44,16 @@ BIN_DECL(page_send){
     sprintf(bodybuf, okbody, mime);
     
     long fsize = ftell(f);
-    ssize = fsize + 10 + strlen(okhdr) + strlen(bodybuf);
+    size_t ssize = fsize + 12 + strlen(okhdr) + strlen(bodybuf);
     rewind(f);
     char * sc = malloc(ssize + 1);
     char *wr = sc;
-    wr += sprintf(sc, "%s%d%%s", okhdr, fsize, bodybuf);
-    fread(wr, ssize, 1, f);
+    wr += sprintf(sc, "%s%ld%s", okhdr, fsize, bodybuf);
+    size_t bytes_read = pread(fileno(f), wr, fsize, 0);
+    printf("\n%lu allocated %ld read\n", ssize, bytes_read + (wr - sc));
     free(content->content);
-    content->len = (int)ssize;
-    content->cap = (int)ssize;
+    content->len = bytes_read + (wr - sc);
+    content->cap = content->len;
     content->content = sc;
     fclose(f);
     return (object*)content;
@@ -157,7 +128,7 @@ connection * new_conn(int clfd){
     connection *conn = malloc(sizeof(connection));
     //is self-finalized
     conn->type = &conntype;
-    conn->refcnt = 1;
+    conn->refcnt = 0;
     conn->type = 0;
     conn->clfd = clfd;
     return conn;
@@ -167,7 +138,7 @@ connection * new_conn(int clfd){
 BIN_DECL(__finalize){
     connection * c = (connection*)Args.aptr[0];
     dulstring * s = (dulstring*)Args.aptr[1];
-    if(strstr(s->content, "HTTP/1.1") != 0){
+    if(strstr(s->content, "HTTP/1.1") == 0){
         write(c->clfd, okhdr, strlen(okhdr));
         char clen [10];
         sprintf(clen, "%d", s->len);
@@ -176,10 +147,9 @@ BIN_DECL(__finalize){
         write(c->clfd, clen, strlen(clen));
         write(c->clfd, body, strlen(body));
     }
-    
     write(c->clfd, s->content, s->len);
+    ob_dealloc(s);
     close(c->clfd);
-    free(c);
     return 0;
 }
 
@@ -212,15 +182,18 @@ BIN_DECL(__accept){
         if(strcmp(ext, "css")==0){
             mime = "text/css";
         }
+        if(strcmp(ext, "svg")==0){
+            mime = "image/svg+xml";
+        }
         sprintf(bodybuf, okbody, mime);
         sprintf(clen, "%d", len);
         write(clfd, clen, strlen(clen));
         write(clfd, bodybuf, strlen(bodybuf));
-        char *rdbuf = malloc(len);
-        fread(rdbuf, len, 1, f);
-        write(clfd, rdbuf, len);
+        char *rdbuf_ = malloc(len);
+        fread(rdbuf_, len, 1, f);
+        write(clfd, rdbuf_, len);
+        free(rdbuf_);
         fclose(f);
-        free(rdbuf);
         close(clfd);
         return 0;
     }
@@ -236,7 +209,5 @@ BIN_DECL(__accept){
     }
     return mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
 }
-
-
 
 

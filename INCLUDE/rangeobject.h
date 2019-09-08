@@ -24,7 +24,7 @@ typedef struct {
     dulnumber  * pos;
 } range_iter;
 
-object* init_range_iter     (const object*);
+object* init_range_iter     (object*);
 object* range_iter_next     (object*);
 object* unpack_range_iter   (object*);
 extern const struct obtype RANGEOBJECTTYPE;

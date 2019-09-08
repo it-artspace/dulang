@@ -43,6 +43,7 @@ object* mktuple_va(int num, ...){
     va_start(ap, num);
     for(int i = 0; i<num; ++i){
         t->items[i] = va_arg(ap, object*);
+        INCREF(t->items[i]);
     }
     va_end(ap);
     return (object*)t;
@@ -55,7 +56,7 @@ const struct obtype BUNDLETYPE = {
     "bundle",
     &dump_tuple, //dump
     0, //alloc
-    &destr_tuple, //dealloc
+    0, //dealloc
     0, //+
     0, //-
     0, // *
