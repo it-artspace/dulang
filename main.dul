@@ -1,1 +1,5 @@
 import "http.dul"
+app = http.app
+app.route["/"] = fun(req)
+	app.sendPage("...")
+app.launch()

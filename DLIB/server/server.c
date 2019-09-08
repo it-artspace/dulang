@@ -23,7 +23,7 @@
 static int sockfd;
 static const char * okhdr = "HTTP/1.1 200 OK\r\nContent-length:";
 static const char * okbody = "\r\nContent-Type: %s\r\nConnection: close\r\n\r\n";
-static const char * statdir = "/Users/jernicozz/Downloads/dulfront/develop";
+static const char * statdir = "";
 
 
 
@@ -86,6 +86,10 @@ BIN_DECL(__listen){
     bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     listen(sockfd, 100);
     printf("listening %d", portno);
+    char * dirbuf = malloc(1000);
+    statdir = getcwd(dirbuf, 1000);
+    strcat(dirbuf, "/static/");
+    //printf("%s", dirbuf);
     return 0;
 }
 
@@ -129,7 +133,6 @@ connection * new_conn(int clfd){
     //is self-finalized
     conn->type = &conntype;
     conn->refcnt = 0;
-    conn->type = 0;
     conn->clfd = clfd;
     return conn;
 }
