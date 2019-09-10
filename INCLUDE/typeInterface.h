@@ -44,9 +44,9 @@ struct obtype{
     object*     (*mult_op)      (object*,  object*);
     object*     (*div_op)       (object*,  object*);
     object*     (*inpadd)       (object*,  object*);
-    void        (*inpsub)       (object*,  object*);
-    void        (*inpmult)      (object*,  object*);
-    void        (*inpdiv)       (object*,  object*);
+    object*     (*inpsub)       (object*,  object*);
+    object*     (*inpmult)      (object*,  object*);
+    object*     (*inpdiv)       (object*,  object*);
     char        (*lt)           (object*,  object*);
     char        (*gt)           (object*,  object*);
     char        (*eq)           (object*,  object*);
