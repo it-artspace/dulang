@@ -13,6 +13,6 @@
 #define print_bytecode 0
 #define print_opcode_run 0
 #define socket_runner 0
-
+#define debug_symbols 0
 
 #endif /* debuginfo_h */
