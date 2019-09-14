@@ -101,6 +101,7 @@ void launch_file(char*fname){
     char* bname = strtok(basename(strdup(fname)), ".");
     struct _crt* newcoro = start_coro(current_thread, f);
     context* created = newcoro->sttop;
+    created->non_destroy = 1;
     pthread_mutex_lock(&workload_lock);
     current_thread->current = newcoro;
     fprintf(output, "launching module %s...\n\n", bname);

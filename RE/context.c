@@ -166,7 +166,7 @@ int exec_context(context*ctx){
                 
                 builtin_func* f = (builtin_func*)sttop;
                 binarg Args = {ctx->stackptr -= _op->arg, _op->arg};
-                *ctx->stackptr++ = f->func_pointer(Args ,ctx->coroutine);
+                *ctx->stackptr++ = f->func_pointer(Args);
                 //DECREF(args);
                 
             }
@@ -299,7 +299,7 @@ int exec_context(context*ctx){
                         binarg a;
                         a.a_passed = _op->arg;
                         a.aptr = ctx->stackptr -= a.a_passed;
-                        *ctx->stackptr++ = ((builtin_func*)method_ob)->func_pointer(a, ctx->coroutine);
+                        *ctx->stackptr++ = ((builtin_func*)method_ob)->func_pointer(a);
                         break;
                     }
                     if(method_ob->type->type_id == method_id){
@@ -420,6 +420,7 @@ int exec_context(context*ctx){
             if(strstr(modname, ".dul")){
                 funcobject * f = file_to_fo(modname);
                 context * c = init_context(f, ctx->coroutine);
+                c->non_destroy = 1;
                 
             } else {
                
@@ -582,14 +583,19 @@ context* init_context(const funcobject*co_static, struct _crt*coro){
 
 
 void destroy_context(context*ctx){
-    for(int i = 0; i<ctx->co_static->namecount; ++i){
-        //DECREF(ctx->vars[i])
+    if(!ctx->non_destroy){
+        for(int i = 0; i<ctx->co_static->namecount; ++i){
+            DECREF(ctx->vars[i])
+        }
+        for(object** stcleaner = ctx->rstptr; stcleaner != ctx->stackptr; ++stcleaner){
+            DECREF(*stcleaner);
+        }
+        free(ctx->rstptr);
+        free(ctx->vars);
+        ob_dealloc((object*)ctx->writer);
+        free(ctx);
     }
-    //
     
-    dulfree(ctx->rstptr);
-    //vars will be freed in another place
-    free(ctx);
 }
 
 

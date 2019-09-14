@@ -18,6 +18,37 @@ object* str_len   (object* self, binarg Args){
 }
 
 
+METHOD_DECL(strformat){
+    dulstring * template = (dulstring*)self;
+    bundle * args = _mktuple(Args.aptr + Args.a_passed, Args.a_passed);
+    char * rdr = template->content;
+    char * preceding_rdr = template->content;
+    char * resbuf = malloc(50000);
+    char * wr = resbuf;
+    object * num_idx = numfromdouble(0);
+    for(char * rdr = template->content; rdr < template->content + template->len; ++rdr){
+        if(*rdr == '$'){
+            rdr++;
+            int i;
+            char *numend;
+            i = strtod(rdr, &numend);
+            rdr = numend - 1;
+            ((dulnumber*)num_idx)->val = i;
+            object * o = tuple_sub_get(args, num_idx);
+            if(o && o->type->dump){
+                char * dump = o->type->dump(o);
+                wr += sprintf(wr, "%s", dump);
+                free(dump);
+            }
+        } else {
+            *wr++ = *rdr;
+        }
+    }
+    *wr = 0;
+    return strfromchar(resbuf);
+}
+
+
 static struct {
     const char* name;
     bin_method m;
@@ -28,8 +59,15 @@ static struct {
         1,
         &str_len
     }
+    },{
+    "format",
+    {
+        &BINTYPE,
+        1,
+        &strformat
+    }
 }};
-static int str_methods_count = 1;
+static int str_methods_count = 2;
 
 object* get_str_methods(void){
     static object * methods;

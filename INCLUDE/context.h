@@ -28,6 +28,7 @@ typedef struct ctx{
     struct ctx* return_to;
     dulchannel * writer;
     struct _crt* coroutine;
+    int non_destroy;
 } context;
 
 context* init_context(const funcobject*, struct _crt*coro);

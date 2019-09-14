@@ -58,6 +58,9 @@ typedef struct _an{
 	struct _an** children;
 	struct _an*	 parent;
 	void* val;
+    int lineno;
+    int linepos;
+    char * fname;
 } astnode;
 
 astnode*	astnode_new			( enum asttype type, int capacity, int children, ... );

@@ -14,10 +14,10 @@
 
 struct _crt;
 
-typedef object* (*binfptr)      (binarg Args, struct _crt * coro);
+typedef object* (*binfptr)      (binarg Args);
 typedef object* (*method_ptr)   (object* self, binarg Args);
 #define METHOD_DECL(name) object* name(object*self, binarg Args)
-#define BIN_DECL(name)  object* name(binarg Args, struct _crt* coro)
+#define BIN_DECL(name)  object* name(binarg Args)
 
 typedef struct {
     ObHead
@@ -30,13 +30,13 @@ typedef struct {
     method_ptr func_pointer;
 } bin_method;
 
-object* __bin_obdump    (binarg Args, struct _crt *);
-object* __bin_range     (binarg Args, struct _crt *);
-object* __bin_typeof    (binarg Args, struct _crt *);
-object* __bin_object    (binarg Args, struct _crt *);
-object* __bin_str       (binarg Args, struct _crt *);
-object* __bin_array     (binarg Args, struct _crt *);
-object* __bin_time      (binarg Args, struct _crt *);
+object* __bin_obdump    (binarg Args);
+object* __bin_range     (binarg Args);
+object* __bin_typeof    (binarg Args);
+object* __bin_object    (binarg Args);
+object* __bin_str       (binarg Args);
+object* __bin_array     (binarg Args);
+object* __bin_time      (binarg Args);
 extern const struct obtype BINTYPE;
 extern const struct obtype BINMTYPE;
 #endif /* builtin_h */

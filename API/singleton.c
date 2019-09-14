@@ -23,7 +23,7 @@ const struct obtype METHODTYPE = {
     "method",
     &dump_method, //dump
     0, //alloc
-    0, //dealloc
+    &destroy_method, //dealloc
     0, //+
     0, //-
     0, // *
@@ -50,6 +50,8 @@ const struct obtype METHODTYPE = {
 };
 
 char fast_str_check(object * str1, object *str2){
+    if(!str1 || !str2)
+        return 0;
     dulstring * s1 = (dulstring*)str1;
     dulstring * s2 = (dulstring*)str2;
     if(s1->len != s2->len)
@@ -92,7 +94,7 @@ void ob_subscr_set(object*self, object*name, object*target){
     INCREF(target);
     if(target->type->type_id == func_id){
         //bin methods cannot be assigned here
-        dulmethod * method = ob_alloc(sizeof(dulmethod));
+        dulmethod * method = malloc(sizeof(dulmethod));
         method->refcnt = 1;
         method->instance = self;
         method->executable = target;
@@ -212,6 +214,7 @@ void obj_dealloc(object*s){
     for(int i = 0; i<32; ++i){
         if(self->content[i].member){
             DECREF(self->content[i].member);
+            DECREF(self->content[i].name);
         }
     }
     

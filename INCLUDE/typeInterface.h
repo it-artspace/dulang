@@ -35,7 +35,7 @@ typedef struct {object **aptr; int a_passed;} binarg;
 
 
 struct obtype{
-     char  *name;
+    char * name;
     char* (*dump)(object*);
     object*     (*allocate)     (void);
     void        (*dealloc)      (object*self);

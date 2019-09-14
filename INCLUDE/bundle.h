@@ -20,5 +20,7 @@ object* mktuple_va(int num, ...);
 void destr_tuple(object*);
 char* dump_tuple(object*);
 object* tuple_method(object*, const char*, object*);
+object* tuple_sub_get(object*self, object*pos);
+void tuple_sub_set(object*self, object*pos, object*);
 extern const struct obtype BUNDLETYPE;
 #endif

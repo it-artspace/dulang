@@ -5,6 +5,11 @@
 #include <libgen.h>
 #include "../debuginfo.h"
 
+void bind_to_lexem(astnode * node, lexem * l){
+    node->linepos = l->line_pos;
+    node->lineno = l->line_no;
+}
+
 
 void		parse_error_at_va		( lexem* currlexem, const char* format, va_list va )
 {
@@ -92,6 +97,9 @@ astnode*	parse_file			( const char*fname ){
 #endif
 
 	astnode*  filefunc = astnode_new(MODULE, 100, 0 );
+    filefunc->lineno = 1;
+    filefunc->linepos = 0;
+    filefunc->fname = strdup(fname);
 	lexem*	  curr;
 	
 	while( (curr=preview_lexem( parser )) != NULL )
@@ -141,6 +149,7 @@ astnode*	parse_statement	( dulparser* parser )
                     l = preview_lexem(parser);
                     
                     astnode* if_statement = astnode_new( IFSTAT, 3, 2, expr, compound_true );
+                    bind_to_lexem(if_statement, l);
                     if( l != NULL && l->t == SPECIAL && l->sp == kwelse){
                         extract_lexem(parser);
                         extract_lexem(parser);
@@ -167,6 +176,7 @@ astnode*	parse_statement	( dulparser* parser )
                     }
                     astnode* compound_true = parse_compound( parser );
                     astnode* for_statement = astnode_new(FORSTAT , 2, 2, expr, compound_true );
+                    bind_to_lexem(for_statement, l);
                     return for_statement;
                 }while(0);
                 
@@ -503,6 +513,7 @@ astnode* parse_postfix(dulparser*parser){
                     }
                     
                     main = astnode_new(FUNCCALL, 2, 2, main, subexp);
+                    bind_to_lexem(main, l);
                 } while(0);
                 break;
                 
@@ -636,6 +647,7 @@ astnode*	parse_lrvalue	( dulparser* parser )
         extract_lexem(parser);
         //check if theres a name
         astnode*funcnode = astnode_new(FUNCDEF, 2, 0);
+        bind_to_lexem(funcnode, l);
         lexem*l = preview_lexem(parser);
 		if( l == NULL ) {
             parse_error_at(l, "expected either identifier or opening bracket ( at func decl but EOF found" );

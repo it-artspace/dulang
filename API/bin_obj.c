@@ -7,14 +7,15 @@
 //
 
 #include "../api.h"
-object* __bin_object(binarg Args, struct _crt*coro){
+#include "../INCLUDE/dulthread.h"
+object* __bin_object(binarg Args){
     if(Args.a_passed == 0)
         return new_ob();
     if(Args.a_passed == 1 && strcmp(Args.aptr[0]->type->name, "functional object")==0){
         //initialized with lambda
         object* obj = new_ob();
         funcobject* r_func_arg = (funcobject*)Args.aptr[0];
-        context* c = init_context(r_func_arg, coro);
+        context* c = init_context(r_func_arg, current_thread->current);
         int this_pos = -1;
         for(int i = 0; i<r_func_arg->namecount; ++i){
             if(strcmp("this", r_func_arg->varnames[i]) == 0){

@@ -14,10 +14,12 @@
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
 #include <netdb.h> /* struct hostent, gethostbyname */
 #include <arpa/inet.h>
-#import <fcntl.h>
+#include <fcntl.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <pthread.h>
+#include <ctype.h>
+#include <math.h>
 
 
 static int sockfd;
@@ -47,7 +49,7 @@ BIN_DECL(page_send){
     size_t ssize = fsize + 12 + strlen(okhdr) + strlen(bodybuf);
     rewind(f);
     char * sc = malloc(ssize + 1);
-    char *wr = sc;
+    char * wr = sc;
     wr += sprintf(sc, "%s%ld%s", okhdr, fsize, bodybuf);
     size_t bytes_read = pread(fileno(f), wr, fsize, 0);
     printf("\n%lu allocated %ld read\n", ssize, bytes_read + (wr - sc));
@@ -58,6 +60,8 @@ BIN_DECL(page_send){
     fclose(f);
     return (object*)content;
 }
+
+
 
 
 BIN_DECL(__listen){
@@ -141,7 +145,7 @@ connection * new_conn(int clfd){
 BIN_DECL(__finalize){
     connection * c = (connection*)Args.aptr[0];
     dulstring * s = (dulstring*)Args.aptr[1];
-    if(strstr(s->content, "HTTP/1.1") == 0){
+    if(strnstr(s->content, "HTTP/1.1", s->len) == 0){
         write(c->clfd, okhdr, strlen(okhdr));
         char clen [10];
         sprintf(clen, "%d", s->len);
@@ -151,7 +155,6 @@ BIN_DECL(__finalize){
         write(c->clfd, body, strlen(body));
     }
     write(c->clfd, s->content, s->len);
-    ob_dealloc(s);
     close(c->clfd);
     return 0;
 }
@@ -210,6 +213,9 @@ BIN_DECL(__accept){
         object * ob_val = strfromchar(val);
         ob_subscr_set(params, ob_name, ob_val);
     }
+    //lets read some headers but actually we are most interested in Content-length
+    
+    
     return mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
 }
 

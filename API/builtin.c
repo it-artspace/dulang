@@ -45,7 +45,7 @@ const struct obtype BINTYPE = {
 
 
 
-object* __bin_obdump    (binarg Args, struct _crt * coro){
+object* __bin_obdump    (binarg Args){
     for(int i =0; i<Args.a_passed; ++i){
         object* curarg = Args.aptr[i];
         if(curarg){
@@ -62,7 +62,7 @@ object* __bin_obdump    (binarg Args, struct _crt * coro){
     return 0;
 }
 
-object* __bin_typeof    (binarg Args, struct _crt * coro){
+object* __bin_typeof    (binarg Args){
     if(Args.a_passed > 1){
         object* res_arr [Args.a_passed];
         for(int i = Args.a_passed; i>0; --i){
@@ -81,7 +81,7 @@ object* __bin_typeof    (binarg Args, struct _crt * coro){
 }
 
 
-object* __bin_range(binarg Args, struct _crt* coro){
+object* __bin_range(binarg Args){
     switch(Args.a_passed){
         case 1:{
             object* o = Args.aptr[0];
@@ -175,7 +175,7 @@ object* __bin_range_(object*args, struct _crt * coro){
 
 
 
-object* __bin_str       (binarg Args, struct _crt *_){
+object* __bin_str       (binarg Args){
     if(Args.a_passed != 1){
         fprintf(stderr, "in function str 1 argument expected but %d passed", Args.a_passed);
         return 0;
@@ -191,11 +191,11 @@ object* __bin_str       (binarg Args, struct _crt *_){
 }
 
 
-object* __bin_time    (binarg Args, struct _crt *_){
+object* __bin_time    (binarg Args){
     return numfromdouble((double)clock()/CLOCKS_PER_SEC);
 }
 
-object* __bin_array     (binarg Args, struct _crt *_){
+object* __bin_array     (binarg Args){
     dularray * arr = ob_alloc(sizeof(dularray));
     arr->refcnt = 0;
     arr->elem_count = 0;

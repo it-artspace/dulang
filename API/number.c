@@ -7,7 +7,10 @@
 //
 
 #include "../api.h"
-
+#ifndef use_area
+#undef ob_alloc
+#define ob_alloc malloc
+#endif
 char num_lt(object*left, object*right){
     dulnumber*f = (dulnumber*)left;
     dulnumber*s = (dulnumber*)right;
@@ -72,7 +75,9 @@ const struct obtype NUMTYPE = {
 };
 
 object* numfromdouble(double val){
+
     dulnumber* newnum = (dulnumber*)ob_alloc(sizeof(dulnumber));
+
     newnum->refcnt = 0;
     newnum->val = val;
     newnum->type = &NUMTYPE;

@@ -163,5 +163,5 @@ void		astnode_add_child	( astnode* parent, astnode* child )
 	parent->children[ parent->children_count ] = child;
 	parent->children_count ++;
 	child->parent = parent;
-    
+    child->fname = parent->fname;
 }

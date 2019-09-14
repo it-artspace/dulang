@@ -1,5 +1,1 @@
-import "http.dul"
-app = http.app
-app.route["/"] = fun(req)
-	app.sendPage("...")
-app.launch()
+write "some good formatted string $0".format(object())

@@ -37,6 +37,8 @@ typedef struct fobj {
         //first is declared as int - why not, it anyway will have alignof 8
         int op_code;
         int arg;
+        int lineno;
+        int linepos;
     } *byteops;
     
 } funcobject;

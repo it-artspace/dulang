@@ -182,9 +182,9 @@ void extract_names(funcobject*writer, astnode*node){
         if(node->type == FORSTAT){
             char* iter_name;
             if(node->children[0]->children[0]->type == NAME){
-                iter_name = (char*)malloc(strlen((char*)node->children[0]->children[0]->val)+6);
+                iter_name = (char*)malloc(strlen((char*)node->children[0]->children[0]->val)+7);
                 strcpy(iter_name, (char*)node->children[0]->children[0]->val);
-                strcpy(iter_name+ strlen((char*)node->children[0]->children[0]->val), "_iter$" );
+                strcat(iter_name, "_iter$" );
             } else {
                 iter_name = strdup ("_iter$");
             }
@@ -246,7 +246,7 @@ void write_for(funcobject*writer, astnode*node){
     char* iter_name;
     if(node->children[0]->children[0]->type == NAME){
         char * name_wo_mangle = (char*)node->children[0]->children[0]->val;
-        iter_name= (char*)malloc(strlen(name_wo_mangle)+6);
+        iter_name= (char*)malloc(strlen(name_wo_mangle)+7);
         strcpy(iter_name, name_wo_mangle);
         strcat(iter_name, "_iter$" );
     } else {
@@ -342,6 +342,7 @@ void write_node(funcobject* writer, astnode*node){
             break;
         case FUNCCALL:
             //! принимать аргументом число - количество аргументов, которые надо взять со стека (сложно)
+            
             if(node->children[1]->type == MKTUPLE){
                 for(int i = 0; i<node->children[1]->children_count; ++i){
                     write_node(writer, node->children[1]->children[i]);

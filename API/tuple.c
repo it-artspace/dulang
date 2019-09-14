@@ -15,7 +15,7 @@ object* tuple_sub_get(object*self, object*pos){
         return 0;
     dulnumber* p = (dulnumber*)pos;
     bundle*b = (bundle*)self;
-    if(p->val < 0 || p->val> b->count)
+    if(p->val < 0 || p->val>= b->count)
         return 0;
     return b->items[(int)p->val];
 }
