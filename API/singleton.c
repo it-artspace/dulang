@@ -54,9 +54,14 @@ char fast_str_check(object * str1, object *str2){
         return 0;
     dulstring * s1 = (dulstring*)str1;
     dulstring * s2 = (dulstring*)str2;
-    if(s1->len != s2->len)
+    int len1 = s1->len;
+    int len2 = s2->len;
+    if(s1->hash != s2->hash)
         return 0;
-    for(int i = 0; i < s1->len; ++i){
+    if(len1 != len2)
+        return 0;
+    //lets treat as int to reduce register pushes
+    for(int i = 0; i < len1;++i){
         if(s1->content[i] != s2->content[i])
             return 0;
     }
@@ -80,7 +85,7 @@ object* new_ob(void){
 object* ob_subscr_get   (const object*self, object * s_name){
     char*name = ((dulstring*)s_name)->content;
     single_ob*t = (single_ob*)self;
-    unsigned int index = hashstr(name) % t->cap;
+    unsigned int index = ((dulstring*)s_name)->hash % t->cap;
     int itercount = 0;
     while(t->content[index].name && !fast_str_check(t->content[index].name, s_name)){
         index = (index * 5 + 1) % t->cap;
@@ -91,8 +96,9 @@ object* ob_subscr_get   (const object*self, object * s_name){
 }
 
 void ob_subscr_set(object*self, object*name, object*target){
-    INCREF(target);
-    if(target->type->type_id == func_id){
+    if(target)
+        INCREF(target);
+    if(target && target->type->type_id == func_id){
         //bin methods cannot be assigned here
         dulmethod * method = malloc(sizeof(dulmethod));
         method->refcnt = 1;

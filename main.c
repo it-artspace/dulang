@@ -39,6 +39,7 @@ volatile int final_context = 0;
 
 
 void* workloop(void*a){
+    current_thread = work_pool;
     while(1){
         pthread_mutex_lock(&workload_lock);
         while(!current_thread->workload){

@@ -8,7 +8,7 @@
 
 #include "../api.h"
 #define STRCAP 15
-
+#define EXPERIMENTAL_CONS 1
 object* str_len   (object* self, binarg Args){
     if(Args.a_passed > 0){
         fprintf(stderr, "expected 0 arguments in len method but %d passed", Args.a_passed);
@@ -20,9 +20,7 @@ object* str_len   (object* self, binarg Args){
 
 METHOD_DECL(strformat){
     dulstring * template = (dulstring*)self;
-    bundle * args = _mktuple(Args.aptr + Args.a_passed, Args.a_passed);
-    char * rdr = template->content;
-    char * preceding_rdr = template->content;
+    bundle * args = (bundle*)_mktuple(Args.aptr + Args.a_passed, Args.a_passed);
     char * resbuf = malloc(50000);
     char * wr = resbuf;
     object * num_idx = numfromdouble(0);
@@ -34,7 +32,15 @@ METHOD_DECL(strformat){
             i = strtod(rdr, &numend);
             rdr = numend - 1;
             ((dulnumber*)num_idx)->val = i;
-            object * o = tuple_sub_get(args, num_idx);
+            object * o = tuple_sub_get((object*)args, num_idx);
+            if(o->type->type_id == string_id){
+                wr+= sprintf(wr, "%*s", ((dulstring*)o)->len, ((dulstring*)o)->content);
+                continue;
+            }
+            if(o->type->type_id == func_id){
+                
+                continue;
+            }
             if(o && o->type->dump){
                 char * dump = o->type->dump(o);
                 wr += sprintf(wr, "%s", dump);
@@ -133,13 +139,16 @@ void str_subscr_set(object*s, object*i, object*c){
     if(pos->val < 0 || pos->val > self->len){
         return;
     }
+    char former = self->content[(int)pos->val];
     self->content[(int)pos->val] = to_insert->content[0];
+    //recount hash requires only recount of pos->val -th member
+    self->hash += (int)(to_insert->content[0] - former) * pow(POL, pos->val);
 }
 
 typedef struct {
     ObHead
     dulstring*coll;
-    int pos;
+    dulnumber * pos;
 } striter;
 object* str_iter_next   (object*);
 object* unpack_str_iter (object*);
@@ -180,14 +189,14 @@ object* init_str_iter(const object*s){
     new_iter->type = &STRITERTYPE;
     new_iter->refcnt = 1;
     new_iter->coll = self;
-    new_iter->pos = 0;
+    new_iter->pos = numfromdouble(0);
     return (object*)new_iter;
 }
 
 object* str_iter_next   (object*s){
     striter* self = (striter*)s;
-    self->pos++;
-    if(self->pos >= self->coll->len){
+    self->pos->val++;
+    if(self->pos->val >= self->coll->len){
         free(self);
         return 0;
     }
@@ -206,13 +215,23 @@ object * str_iadd(object * left, object * right){
     }
     dulstring * l = (dulstring*)left;
     dulstring * r = (dulstring*)right;
+    char * content = l->content;
+    int llen = l->len;
     if(l->refcnt > 1){
-        char* v = l->content;
-        l =  strfromchar(v);
+        l =  allocstr();
+        l->content = malloc(llen);
+        l->len = llen;
+        memcpy(l->content, content, llen);
     }
-    l->content = realloc(l->content, l->len + r->len);
+    if(l->cap < l->len + r->len){
+        while(l->cap < l->len + r->len){
+            l->cap <<= 1;
+        }
+        l->content = realloc(l->content, l->cap);
+    }
     strncpy(l->content + l->len, r->content, r->len);
     l->len += r->len;
+    l->hash += hashname_n(l->content, l->len);
     return (object*)l;
 }
 
@@ -248,9 +267,23 @@ const struct obtype STRTYPE = {
     &get_str_methods// method
 };
 
+void dump_cons(dulstring* cstring, char * where_to){
+    if(!cstring->is_cons){
+        memcpy(where_to, cstring->content, cstring->len);
+    } else {
+        int left_len = ((dulstring*)cstring->cons.left)->len;
+        dump_cons(cstring->cons.left, where_to);
+        dump_cons(cstring->cons.right, where_to + left_len);
+    }
+}
+
+
 char* dumpstr(object*self){
-    char*ptr = (char*)dulalloc(((dulstring*)self)->len+12);
-    sprintf(ptr, "\"%*s\"",((dulstring*)self)->len ,((dulstring*)self)->content);
+    char*ptr = (char*)dulalloc(((dulstring*)self)->len+1);
+    dulstring * s = (dulstring*)self;
+    int byteno = ((dulstring*)self)->len;
+    dump_cons(s, ptr);
+    ptr[byteno] = 0;
     return ptr;
 }
 
@@ -259,20 +292,39 @@ object* allocstr(void){
     dulstring*nstr = (dulstring*)dulalloc(sizeof(dulstring));
     nstr->type = &STRTYPE;
     nstr->len = 0;
+    nstr->is_cons = 0;
     nstr->content = (char*)dulalloc(STRCAP);
     return (object*)nstr;
 }
 
 void destrstr(object*self){
     dulstring*s = (dulstring*)self;
-    free(s->content);
+    if(!s->is_cons)
+        free(s->content);
+    else{
+        DECREF(s->cons.left);
+        DECREF(s->cons.right);
+    }
 }
 
 object*concatstr(object*left, object*right){
-    if(strcmp(right->type->name, "string")!=0){
+    if(right->type->type_id != string_id){
         fprintf(stderr, "cannot concat string with %s type\n", right->type->name);
         return 0;
     }
+#if EXPERIMENTAL_CONS
+    dulstring * res = malloc(sizeof(dulstring));
+    INCREF(left);
+    INCREF(right);
+    res->refcnt = 0;
+    res->is_cons = 1;
+    res->type = &STRTYPE;
+    res->cons.left = left;
+    res->cons.right = right;
+    res->len = ((dulstring*)left)->len + ((dulstring*)right)->len;
+    return (object*)res;
+#else
+    
     dulstring*s_left = (dulstring*)left;
     dulstring*s_right = (dulstring*)right;
     dulstring*nstr = (dulstring*)dulalloc(sizeof(dulstring));
@@ -282,8 +334,10 @@ object*concatstr(object*left, object*right){
     nstr->content = (char*)dulalloc(nstr->len + 1);
     memcpy(nstr->content, s_left->content, s_left->len);
     memcpy(nstr->content+s_left->len, s_right->content, s_right->len);
+    nstr->hash = hashname_n(nstr->content, nstr->len);
     nstr->content[nstr->len] = 0;
     return (object*)nstr;
+#endif
 }
 
 int strleng(object*self){
@@ -294,8 +348,23 @@ object*strfromchar(char*source){
     dulstring*nst = (dulstring*)dulalloc(sizeof(dulstring));
     nst->type = &STRTYPE;
     nst->refcnt = 0;
+    nst->is_cons = 0;
     nst->len = (int)strlen(source);
+    nst->cap = nst->len;
     nst->content = strdup(source);
+    nst->hash = hashstr(source);
+    return (object*)nst;
+}
+
+object * strfromnchar(char * source, int len){
+    dulstring*nst = (dulstring*)dulalloc(sizeof(dulstring));
+    nst->type = &STRTYPE;
+    nst->refcnt = 0;
+    nst->is_cons = 0;
+    nst->len = len;
+    nst->cap = len;
+    nst->content = strndup(source, len);
+    nst->hash = hashname_n(source, len);
     return (object*)nst;
 }
 

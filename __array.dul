@@ -1,0 +1,14 @@
+fun map( remapper )
+    res = array()
+    for elem in this
+        res.append(remapper(elem))
+    return res
+
+fun reduce ( f, val )
+    for elem in this
+        val = f(elem, val)
+    return val
+
+fun forEach( remapper )
+    for elem in this
+        remapper(elem)

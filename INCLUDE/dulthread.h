@@ -37,7 +37,7 @@ struct thread{
 #define flush_stdout
 extern struct thread work_pool[numthreads];
 extern struct thread*less_loaded;
-extern volatile __thread struct thread*current_thread;
+extern volatile struct thread*current_thread;
 int exec_thread(void);
 //returns 0 on finish
 
@@ -45,6 +45,6 @@ struct _crt * start_coro( struct thread* thr, funcobject* func );
 void destroy_coro(struct _crt*);
 extern const builtin_func *bins[];
 extern const int bin_count;
-
+void thread_error(char * errmsgfmt, ...);
 
 #endif /* dulthread_h */

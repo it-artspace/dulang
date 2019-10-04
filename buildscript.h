@@ -14,7 +14,8 @@
 #include <pthread.h>
 
 void execute_command(char* cmd);
-object* getmodule(char* name);
+#pragma weak getmodule
+__weak object*getmodule(char* name);
 void add_module(char * name, object * mod);
 void init_mods(void);
 extern pthread_mutex_t workload_lock;

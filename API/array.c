@@ -7,6 +7,7 @@
 //
 
 #include "../api.h"
+#include "../buildscript.h"
 object* array_subscr_get(object* self, object* index){
     if(index->type->type_id != number_id)
         return 0;
@@ -65,10 +66,11 @@ static int arr_mc = 2;
 object * get_array_methods(){
     static object * arrm;
     if(arrm == 0){
-        arrm = new_ob();
+        arrm = getmodule("__array");
         for(int i = 0; i<arr_mc; ++i){
             ob_subscr_set(arrm, (object*)strfromchar(arr_methods[i].name), (object*)&arr_methods[i].m);
         }
+        
     }
     return arrm;
 }

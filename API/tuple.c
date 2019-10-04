@@ -9,6 +9,45 @@
 #include "../api.h"
 
 
+typedef struct {
+    ObHead
+    object * pos;
+    object * coll;
+} tuple_iter;
+
+object * unpack_ti(object * i){
+    return tuple_sub_get(((tuple_iter*)i)->coll, ((tuple_iter*)i)->pos);
+}
+
+object * ti_next(object *ti){
+    tuple_iter * i = (tuple_iter*)ti;
+    bundle * b = i->coll;
+    dulnumber* pos = i->pos;
+    if(pos->refcnt > 1){
+        i->pos = pos = numfromdouble(pos->val);
+    }
+    pos->val++;
+    if(pos->val >= b->count){
+        free(ti);
+        return 0;
+    }
+    return ti;
+}
+
+const struct obtype ti_type = {
+    .iter_next = &ti_next,
+    .unpack_iter = &unpack_ti
+};
+
+object * init_tuple_iter(object * tuple){
+    tuple_iter * i = malloc(sizeof(tuple_iter));
+    i->pos = numfromdouble(0);
+    i->coll = tuple;
+    i->refcnt = 1;
+    i->type = &ti_type;
+    return (object*)i;
+}
+
 
 object* tuple_sub_get(object*self, object*pos){
     if(!pos || pos->type->type_id != number_id)
@@ -56,7 +95,7 @@ const struct obtype BUNDLETYPE = {
     "bundle",
     &dump_tuple, //dump
     0, //alloc
-    0, //dealloc
+    &destr_tuple, //dealloc
     0, //+
     0, //-
     0, // *
@@ -72,7 +111,7 @@ const struct obtype BUNDLETYPE = {
     0, // >=
     0, // f()
     0, // a in b
-    0, //init_iter (collection initializes iter)
+    &init_tuple_iter, //init_iter (collection initializes iter)
     0, //next_iter
     &tuple_sub_get, // [0]
     &tuple_sub_set, // [0] =

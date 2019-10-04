@@ -31,6 +31,7 @@
 #include "INCLUDE/channel.h"
 #include "INCLUDE/asttoJS.h"
 #include "INCLUDE/dulmethod.h"
+#include "INCLUDE/dulint.h"
 #if 0
 #define use_area
 #endif

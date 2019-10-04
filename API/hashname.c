@@ -16,3 +16,12 @@ unsigned int hashstr(const char*str){
     }
     return res;
 }
+
+unsigned int hashname_n(const char * str, int len){
+    int res = 0;
+    for(int i = 0; i<len;++i){
+        res+=(str[i]-'A');
+        res*=POL;
+    }
+    return res;
+}

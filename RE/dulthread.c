@@ -11,7 +11,7 @@
 struct thread work_pool[numthreads];
 
 struct thread*less_loaded = work_pool;
-volatile __thread struct thread*current_thread = work_pool;
+volatile struct thread*current_thread = work_pool;
 
 
 void destroy_coro(struct _crt*c){
@@ -103,3 +103,13 @@ int exec_thread(void){
 }
 
 
+void thread_error(char * errmsgfmt, ...){
+    struct _crt * coro = current_thread->current;
+    context * problematic = coro->sttop;
+    va_list argList;
+    va_start(argList, errmsgfmt);
+    fprintf(stderr, argList);
+    while(problematic){
+    }
+    va_end(argList);
+}

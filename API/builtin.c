@@ -94,7 +94,7 @@ object* __bin_range(binarg Args){
             r->refcnt = 1;
             r->start = 0;
             r->step = 1;
-            r->end = ((dulnumber*)o)->val;
+            r->end = NumValOf(((dulnumber*)o));
             return (object*)r;
         } break;
         case 2:{
@@ -196,12 +196,24 @@ object* __bin_time    (binarg Args){
 }
 
 object* __bin_array     (binarg Args){
-    dularray * arr = ob_alloc(sizeof(dularray));
+    dularray * arr = malloc(sizeof(dularray));
     arr->refcnt = 0;
     arr->elem_count = 0;
     arr->cap = 15;
     arr->items = malloc(sizeof(object*)*15);
     arr->type = &ARRTYPE;
-    append((object*)arr, Args);
+    if(Args.a_passed == 1 && (*Args.aptr)->type->init_iter){
+        object * iter = (*Args.aptr)->type->init_iter(*Args.aptr);
+        while(iter){
+            binarg a;
+            object * iter_val = iter->type->unpack_iter(iter);
+            a.a_passed = 1;
+            a.aptr = &iter_val;
+            append((object*)arr, a);
+            iter = iter->type->iter_next(iter);
+        }
+    } else {
+        append((object*)arr, Args);
+    }
     return (object*)arr;
 }

@@ -1,29 +1,24 @@
 fun createNode(tag)
     return object{
-        this.tag = tag
-        this.children = array()
-        this.style = object()
-        this.div = fun(init_func)
+        @tag = tag
+        @children = array()
+        @style = object()
+        @div = fun(init_func)
             new_elem = object(this)(init_func)
             new_elem.tag = "div"
             new_elem.children = array()
-            this.children.append(new_elem)
-        this.render = fun()
-            str_acc = "<" + this.tag + " style='"
-            for prop in this.style
-                str_acc += prop + ":" + this.style[prop] + ";"
-            str_acc += "'"
-            if this.onclick
-                str_acc += " onclick='" + this.onclick + "'"
-            str_acc += ">"
-            if this.text
-                str_acc += this.text
-            for i in this.children
+            @children.append(new_elem)
+        @render = fun()
+            str_acc = "<$0 style='".format(@tag)
+            for prop in @style
+                str_acc += "$0:$1;".format(prop, @style[prop])
+            str_acc += "'>"
+            if @text
+                str_acc += @text
+            for i in @children
                 str_acc += i.render()
-            str_acc += "</" + this.tag + ">"
+            str_acc += "</$0>".format(@tag)
             return str_acc
-        this.click = fun(jstext)
-            this.onclick = jstext
     }
 
 fun Document()

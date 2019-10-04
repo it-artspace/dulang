@@ -76,7 +76,7 @@ BIN_DECL(__listen){
             portno = 9277;
         } else {
             dulnumber * ob_portno = (dulnumber*)arg;
-            portno = ob_portno->val;
+            portno = NumValOf(ob_portno);
         }
     }
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -212,6 +212,7 @@ BIN_DECL(__accept){
         object * ob_name = strfromchar(name);
         object * ob_val = strfromchar(val);
         ob_subscr_set(params, ob_name, ob_val);
+        iterparam = strtok(iterparam, "&");
     }
     //lets read some headers but actually we are most interested in Content-length
     

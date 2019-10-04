@@ -23,7 +23,8 @@ void add_literal(funcobject*writer, object*literal){
     if(writer->statcount ++ == writer->statcap){
         writer->statics = (object**)realloc(writer->statics, sizeof(object*)*(writer->statcap<<=1));
     }
-    literal->refcnt=1;
+    if(!((long)literal & 1))
+        literal->refcnt=1;
     writer->statics[writer->statcount - 1] = literal;
 }
 
@@ -80,6 +81,10 @@ funcobject* load_file(const char* fname){
     astnode_print(root);
 #endif
     funcobject* module = init_func(0);
+    module->filepos.fname = strdup(fname);
+    module->filepos.lineno = 0;
+    module->filepos.linepos = 0;
+    
     extract_names(module, root);
     if(root){
         for(int i = 0; i<root->children_count; ++i)
@@ -264,6 +269,7 @@ void write_for(funcobject*writer, astnode*node){
     *(int*)iter_synthetic->val = iter_name_pos;
     write_op(writer, unpack_iter, iter_name_pos);
     write_assign(writer,  node->children[0]->children[0]);
+    writer->byteops[writer->opcount - 1].op_code = store_iter;
     write_node(writer, node->children[1]);
     write_op(writer, iter_next, iter_name_pos);
     write_op(writer, jump, ret_pos - writer->opcount - 1);
@@ -383,7 +389,18 @@ void write_node(funcobject* writer, astnode*node){
             break;
         case NUMLIT:
             do{
-                object* num = numfromdouble(*(double*)node->val);
+                double val = *(double*)node->val;
+                double intptr;
+                object * num;
+#if 1
+                if(fabs(modf(val, &intptr))<1e-10){
+                    num = numfromlong(intptr);
+                }else{
+                    num = numfromdouble(val);
+                }
+#else
+                num = numfromdouble(val);
+#endif
                 add_literal(writer, num);
                 write_op(writer, load_static, writer->statcount - 1);
             }while(0);

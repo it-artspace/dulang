@@ -15,7 +15,16 @@ typedef struct{
     int len;
     int cap;
     char is_copy; //this flag means that content was allocated somewhere else and here we cannot free it, for example it is a substring
-    char*content;
+    char is_cons;
+    union{
+        char*content;
+        struct {
+            object * left;
+            object * right;
+        } cons;
+    };
+    unsigned int hash;
+    
 } dulstring;
 
 object* concatstr(object*, object*);
@@ -25,5 +34,6 @@ int strleng(object*);
 object * str_iadd(object * left, object * right);
 char* dumpstr(object*self);
 object* strfromchar(char*);
+object* strfromnchar(char * source, int len);
 object* getSubstring(object*str, int posstart, int posend);
 #endif /* string_h */

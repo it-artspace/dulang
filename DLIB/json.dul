@@ -1,0 +1,2 @@
+import "JSON/json.ffi"
+parse = json.parse_wrapper

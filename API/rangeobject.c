@@ -66,8 +66,11 @@ object* init_range_iter(object* r){
     range_iter* i = (range_iter*)malloc(sizeof(range_iter));
     i->refcnt = 1;
     i->type = &RANGEITERTYPE;
-    i->coll = (rangeobject*)r;
-    i->pos = (dulnumber*)numfromdouble(((rangeobject*)r)->start);
+    rangeobject* range = (rangeobject*)r;
+    i->start = range->start;
+    i->step = range->step;
+    i->end = range->end;
+    i->pos = (dulnumber*)numfromlong(range->start);
     i->pos->refcnt = 1;
     return (object*)i;
 }
@@ -75,12 +78,22 @@ object* init_range_iter(object* r){
 object* range_iter_next(object* iter){
     range_iter* ri = (range_iter*)iter;
     if(ri->pos->refcnt > 1){
-        ri->pos = numfromdouble(ri->pos->val);
+        ri->pos = (dulnumber*)numfromlong(ri->pos->i_val);
+        INCREF(ri->pos);
     }
-    ri->pos->val += ri->coll->step;
-    int min_range_interval = ri->coll->start<ri->coll->end?ri->coll->start:ri->coll->end;
-    int max_range_interval = ri->coll->start>ri->coll->end?ri->coll->start:ri->coll->end;
-    if(ri->pos->val >= max_range_interval || ri->pos->val < min_range_interval){
+    ri->pos->i_val += ri->step;
+    int val = (int)ri->pos->i_val;
+    int start = ri->start;
+    int stop = ri->end;
+    //the following checks the signs of interval bounds
+    //the idea: while iterator is within bounds it gets different signs no matter the
+    //direction of iteration is
+    // >>31 gets the first bit that is 1 when number is negative
+    // and then we use XOR to assume that only one is negative
+    // ++val is not to hit the bound
+    if(!(
+        (val - start)>>31 ^ (++val - stop)>>31
+    )){
         free(iter);
         return 0;
     }

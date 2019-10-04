@@ -16,6 +16,8 @@
 
 
 int exec_context(context*ctx){
+    
+Begin: ;
     struct op * _op = ctx->inst_pointer++;
     const funcobject * co_static = ctx->co_static;
     if(ctx->cur_expr)
@@ -30,12 +32,14 @@ int exec_context(context*ctx){
     printf("executing %2d opcode at %10lX: %*s : %d\n", i_ptr, (unsigned long)ctx, 20, opcode_repres_[_op->op_code], _op->arg);
 #endif
     switch (_op->op_code) {
-        case store_name:
-            if(ctx->vars[_op->arg])
+        case store_name:{
+            object * o =ctx->vars[_op->arg];
+            if(o && !isInt(o))
                 DECREF(ctx->vars[_op->arg]);
-            ctx->vars[_op->arg] = *--ctx->stackptr;
-            INCREF(ctx->vars[_op->arg]);
-            
+            o = *--ctx->stackptr;
+            ctx->vars[_op->arg] = o;
+            if(o)
+                INCREF(o);
 #if print_opcode_run
             if(ctx->vars[_op->arg] && ctx->vars[_op->arg]->type->dump){
                 char* dumpvar = ctx->vars[_op->arg]->type->dump(ctx->vars[_op->arg]);
@@ -44,19 +48,32 @@ int exec_context(context*ctx){
             }
             
 #endif
-            break;
-        case load_name:
+        }break;
+        case store_iter:{
+            //actually is same as store_name but w/o INCREF-DECREF
+            ctx->vars[_op->arg] = *--ctx->stackptr;
+        }break;
+        case load_name:{
+            //vars is first field is context so it matches its address
             *ctx->stackptr++ = ctx->vars[_op->arg];
-            break;
+            goto Begin;
+        }break;
         case load_static:
             if(!ctx->cur_expr)
                 *ctx->stackptr++ = ctx->co_static->statics[_op->arg];
             else
                 *ctx->stackptr++ = ctx->cur_expr->inlined_in->statics[_op->arg];
+            goto Begin;
             break;
-        case _write:
-            do{
+        case _write:{
                 object* sttop = *--ctx->stackptr;
+                if((long)sttop & 1){
+                    //smallint;
+                    int intrepr[2];
+                    memcpy(&sttop, intrepr, sizeof(object*));
+                    printf("%d\n", intrepr[0]);
+                    break;
+                }
                 if(!sttop){
                     printf("null\n");
                 } else {
@@ -73,8 +90,7 @@ int exec_context(context*ctx){
                 }
                 
 
-            }while(0);
-            break;
+        }break;
         case jump_if_not_true:{
             object* b = *--ctx->stackptr;
             if(!b){
@@ -84,7 +100,7 @@ int exec_context(context*ctx){
             if(b->type == &BOOLTYPE)
                 if(!((dulbool*)b)->val)
                     ctx->inst_pointer += _op->arg;
-
+            goto Begin;
             }break;
         case jump:
             ctx->inst_pointer+= _op->arg;
@@ -97,7 +113,7 @@ int exec_context(context*ctx){
                     newobj->outer_context = ctx;
                     *ctx->stackptr++ = (object*)newobj;
                 
-                
+                goto Begin;
             }while(0);
             break;
         case load_outer:{
@@ -131,8 +147,8 @@ int exec_context(context*ctx){
                                 _op->arg, ((funcobject*)fun)->argcount);
                     }
                     for(int i = ((funcobject*)fun)->argcount - 1; i>=0; --i){
-                        
                         c->vars[i] = *--ctx->stackptr;
+                        INCREF(c->vars[i]);
                     }
                     for(int i = 0; i<((funcobject*)fun)->namecount; ++i)
                         if(strcmp(((funcobject*)fun)->varnames[i], "this")==0){
@@ -209,7 +225,8 @@ int exec_context(context*ctx){
         case dulreturn:
             if(ctx->return_to){
                 object* return_result = *--ctx->stackptr;
-                 *(ctx->return_to->stackptr)++ = return_result;
+                if(return_result) INCREF(return_result);
+                *(ctx->return_to->stackptr)++ = return_result;
             }
             
             return 1;
@@ -234,6 +251,7 @@ int exec_context(context*ctx){
             ctx->stackptr = ctx->stack_to_revert;
             *ctx->stackptr++ = it->type->iter_next(it);
             ctx->vars[_op->arg] = *(ctx->stackptr - 1);
+            goto Begin;
         } break;
         case init_iter:{
             object*coll = *--ctx->stackptr;
@@ -244,6 +262,13 @@ int exec_context(context*ctx){
         case op_plus:{
             object*right = *--ctx->stackptr;
             object*left = *--ctx->stackptr;
+            
+            if(isInt(left) && isInt(right)){
+                //left is smallInt and right is smallInt
+                *ctx->stackptr++ = dulIntPlusInt(left, right);
+                break;
+            }
+            
             void* fptr = left->type->plus_op;
             if(fptr)
                 *ctx->stackptr++ = left->type->plus_op(left, right);
@@ -334,8 +359,23 @@ int exec_context(context*ctx){
                 a.a_passed = _op->arg;
                 a.aptr = ctx->stackptr -= a.a_passed;
                 dulstring* m_name_casted = (dulstring*)method_name;
-                bin_method* bin_method_ = (bin_method*)ob_subscr_get(self->type->get_methods(), (object*)m_name_casted);
-                *ctx->stackptr++ = bin_method_->func_pointer(self, a);
+                object * method_ob = ob_subscr_get(self->type->get_methods(), (object*)m_name_casted);
+                if(method_ob->type->type_id == bin_func_id)
+                    *ctx->stackptr++ = ((bin_method*)method_ob)->func_pointer(self, a);
+                else{
+                    if(method_ob->type->type_id == method_id)
+                        method_ob = ((dulmethod*)method_ob)->executable;
+                    context * c = init_context(method_ob, ctx->coroutine);
+                    for(int i = 0; i<((funcobject*)method_ob)->argcount; ++i)
+                        c->vars[i] = a.aptr[i];
+                    for(int i = 0; i<((funcobject*)method_ob)->namecount; ++i){
+                        if(strcmp("this", ((funcobject*)method_ob)->varnames[i]) == 0){
+                            c->vars[i] = self;
+                            c->this_ptr = self;
+                            break;
+                        }
+                    }
+                }
             }
             
             
@@ -345,6 +385,7 @@ int exec_context(context*ctx){
             object* o = *--ctx->stackptr;
             object* subscribant = *--ctx->stackptr;
             *ctx->stackptr++ = o->type->subscript_get(o, subscribant);
+           
         }break;
         case _subscr_set:{
             object* o = *--ctx->stackptr;
@@ -406,6 +447,8 @@ int exec_context(context*ctx){
             for(int i = _op->arg; i> 0; --i){
                 *ctx->stackptr++ = b->items[i - 1];
             }
+            if(b->refcnt == 0)
+                ob_dealloc((object*)b);
         } break;
         case import:{
            
@@ -498,6 +541,9 @@ int exec_context(context*ctx){
             *(ctx->return_to->stackptr)++ = ctx->this_ptr;
         return 1;
     } else {
+        if(current_thread->workload == 1 && ctx == ctx->coroutine->sttop){
+            goto Begin;
+        }
         return 0;
     }
 }
@@ -561,7 +607,7 @@ context* init_context(const funcobject*co_static, struct _crt*coro){
     ctx->writer = (dulchannel*)new_IOchannel();
 #endif
     ctx->co_static = co_static;
-    ctx->stackptr = (object**)dulalloc(1000*sizeof(object*));
+    ctx->stackptr = (object**)dulalloc(2000*sizeof(object*));
     ctx->rstptr = ctx->stackptr;
     ctx->inst_pointer  = co_static->byteops;
     if(coro)

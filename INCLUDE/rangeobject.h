@@ -20,7 +20,9 @@ typedef struct {
 
 typedef struct {
     ObHead
-    rangeobject* coll;
+    int start;
+    int step;
+    int end;
     dulnumber  * pos;
 } range_iter;
 

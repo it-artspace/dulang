@@ -11,5 +11,5 @@
 #define POL 53
 #include <math.h>
 unsigned int hashstr(const char*str);
-
+unsigned int hashname_n(const char *, int);
 #endif /* hashname_h */

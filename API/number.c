@@ -7,10 +7,11 @@
 //
 
 #include "../api.h"
-#ifndef use_area
-#undef ob_alloc
+
 #define ob_alloc malloc
-#endif
+#define dulfree_ob free
+
+
 char num_lt(object*left, object*right){
     dulnumber*f = (dulnumber*)left;
     dulnumber*s = (dulnumber*)right;
@@ -32,13 +33,19 @@ object * num_iadd(object * left, object * right){
     dulnumber * l = (dulnumber*)left;
     dulnumber * r = (dulnumber*)right;
     if(l->refcnt > 1){
-        double v = l->val;
-        l = ob_alloc(sizeof(dulnumber));
-        l->type = &NUMTYPE;
-        l->refcnt = 0;
-        l->val = v;
+        
+        dulnumber* ll = ob_alloc(sizeof(dulnumber));
+        ll->type = &NUMTYPE;
+        ll->refcnt = 0;
+        ll->n_type = l->n_type;
+        memcpy(&ll->val, &l->val, 8);
+        l = ll;
     }
-    l->val += r->val;
+    if(l->n_type){
+        l->i_val += NumValOf(r);
+    } else {
+        l->val += NumValOf(r);
+    }
     return (object*)l;
 }
 
@@ -76,18 +83,30 @@ const struct obtype NUMTYPE = {
 
 object* numfromdouble(double val){
 
-    dulnumber* newnum = (dulnumber*)ob_alloc(sizeof(dulnumber));
+    dulnumber* newnum = (dulnumber*)malloc(sizeof(dulnumber));
 
     newnum->refcnt = 0;
     newnum->val = val;
+    newnum->n_type = 0;
+    newnum->type = &NUMTYPE;
+    return (object*)newnum;
+}
+
+object * numfromlong(long val){
+    dulnumber* newnum = (dulnumber*)malloc(sizeof(dulnumber));
+    
+    newnum->refcnt = 0;
+    newnum->i_val = val;
+    newnum->n_type = 1;
     newnum->type = &NUMTYPE;
     return (object*)newnum;
 }
 
 char* dumpnumber(object* num){
     char*nstr = (char*)dulalloc(100);
+    dulnumber * n = (dulnumber*)num;
     double d;
-    double number = modf(((dulnumber*)num)->val, &d);
+    double number = modf(NumValOf(n), &d);
     if(fabs(number) < 0.00001){
         sprintf(nstr, "%ld", (long)d);
     } else {
@@ -105,7 +124,17 @@ object* numplus(object*left, object*right){
     dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
-    res->val = ((dulnumber*)left)->val + ((dulnumber*)right)->val;
+    dulnumber * l = (dulnumber*)left;
+    dulnumber * r = (dulnumber*)right;
+    if(l->n_type && r->n_type){
+        res->i_val = l->i_val + r->i_val;
+        res->n_type = 1;
+    } else {
+        double v1 = NumValOf(l);
+        double v2 = NumValOf(r);
+        res->val = v1+v2;
+        res->n_type = 0;
+    }
     return (object*)res;
 }
 
@@ -117,6 +146,7 @@ object* numminus(object*left, object*right){
     dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
+    res->n_type = 0;
     res->val = ((dulnumber*)left)->val - ((dulnumber*)right)->val;
     return (object*)res;
 }

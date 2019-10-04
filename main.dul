@@ -1,1 +1,5 @@
-write "some good formatted string $0".format(object())
+t = time(  )
+a = "101"
+for _ in range( 10000000 )
+	a = a + "1"
+write time(  ) - t

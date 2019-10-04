@@ -241,13 +241,26 @@ enum lexemtype getlexem(dulparser*p){
 		return NONE;
 	}
 	if(p->curstring[p->strpos] == '"'){
+        char * strbuf = "";
 		int strstart = p->strpos;
-		while(p->curstring[++p->strpos] != '"')
-			if(p->curstring[p->strpos] == '\n'){
-				//trshoot("LINE ENDED WITHOUT ENCLOSING \"");
-				destroy_parser(p);
-			}
-        p->strpos++;
+        while(p->curstring[++p->strpos] != '"'){
+            if(p->strpos == strlen(p->curstring) - 1){
+                //start new string
+                fgets(p->curstring, 1024, p->inp);
+                p->strpos = 0;
+            }
+            if(p->curstring[p->strpos] == '\\'){
+                switch(p->curstring[++p->strpos]){
+                    case 'n':
+                        p->curstring[p->strpos] = '\n';
+                        break;
+                    default:
+                        break;
+                }
+            }
+            
+        }
+            p->strpos++;
         int size = p->strpos-strstart-2;
 		clexem->literal = (char*)dulalloc( size + 1);
 		strncpy(clexem->literal, p->curstring + strstart+1, p->strpos-strstart-2);

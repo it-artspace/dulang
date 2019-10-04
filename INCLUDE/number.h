@@ -19,11 +19,12 @@ typedef struct {
 } dulnumber;
 extern const struct obtype NUMTYPE;
 object* numfromdouble(double);
+object* numfromlong(long);
 char* dumpnumber (object*);
 void num_dealloc(object*);
 object* numplus(object*, object*);
 object* numminus(object*, object*);
 object* nummult(object*, object*);
 object* numdiv(object*, object*);
-
+#define NumValOf(o) (o->n_type?o->i_val:o->val)
 #endif /* number_h */

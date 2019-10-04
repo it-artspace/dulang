@@ -6,8 +6,12 @@
 #include "../debuginfo.h"
 
 void bind_to_lexem(astnode * node, lexem * l){
-    node->linepos = l->line_pos;
-    node->lineno = l->line_no;
+    if(l){
+        node->linepos = l->line_pos;
+        node->lineno = l->line_no;
+        
+    }
+    
 }
 
 
@@ -464,28 +468,43 @@ astnode* parse_unaryprefix(dulparser*parser){
 	}
 	if(curl->t == SPECIAL){
 		switch (curl->sp) {
-		  case kw_logical_not:
-			do {
-				extract_lexem(parser);
-				astnode*right = parse_postfix(parser);
-				return astnode_new(LOGNOT, 1, 1, right);
-			} while (0);
+            case kw_logical_not:
+                do {
+                    extract_lexem(parser);
+                    astnode*right = parse_postfix(parser);
+                    return astnode_new(LOGNOT, 1, 1, right);
+                } while (0);
 				
-			break;
+            break;
 			
-		case minus:
-			do {
-				extract_lexem(parser);
-				astnode*right = parse_postfix(parser);
-				astnode*left = astnode_new(NUMLIT, 0, 0);
-				left->val = malloc(sizeof(double));
-				*(double*)left->val = 0;
-				return astnode_new(MINUS, 2, 2, left, right);
-			} while(0);
-			break;
+            case minus:
+                do {
+                    extract_lexem(parser);
+                    astnode*right = parse_postfix(parser);
+                    astnode*left = astnode_new(NUMLIT, 0, 0);
+                    left->val = malloc(sizeof(double));
+                    *(double*)left->val = 0;
+                    return astnode_new(MINUS, 2, 2, left, right);
+                } while(0);
+            break;
 			
-
-		  default:
+            case dot:{
+                extract_lexem(parser);
+               
+                astnode * right = parse_postfix(parser);
+                astnode* this_node = astnode_new(NAME, 0, 0);
+                this_node->val = strdup("this");
+                //actually it can be either funccall or assign
+                astnode * subscribant = (right->children_count)?right->children[0]:right;
+                subscribant->type = STRLIT;
+                if(!right->children_count){
+                    return astnode_new(SUBSCR, 2, 2, this_node, right);
+                } else {
+                    right->children[0] = astnode_new(SUBSCR, 2, 2, this_node, subscribant);
+                    return right;
+                }
+            }break;
+		    default:
 			return parse_postfix(parser);
 		}
 	}
@@ -538,8 +557,37 @@ astnode* parse_postfix(dulparser*parser){
                 extract_lexem(parser);
                 //extract EOL or check what is here
                 lexem*l_ = preview_lexem(parser);
+                astnode * args = 0;
+                astnode * argtuple = astnode_new(MKTUPLE, 5, 0);
+                do{
+                    if(l_->t == SPECIAL && l_->sp == arrow){
+                        extract_lexem(parser);
+                        l_= preview_lexem(parser);
+                        break;
+                    }
+                    if(l_->t == SPECIAL && l_->sp==EOL)
+                        goto funcbody;
+                    astnode * name = astnode_new(NAME, 0, 0);
+                    name->val = strdup(l_->literal);
+                    astnode_add_child(argtuple, name);
+                    extract_lexem(parser);
+                    l_ = preview_lexem(parser);
+                    if(l_->t == SPECIAL && l_->sp == comma){
+                        extract_lexem(parser);
+                        l_ = preview_lexem(parser);
+                        continue;
+                    }
+                } while(1);
+                if(argtuple->children_count == 1){
+                    args = argtuple->children[0];
+                } else {
+                    if(argtuple->children_count)
+                        args = argtuple;
+                }
+                
                 if(l_->t == SPECIAL && l_->sp == EOL){
                     //here is compound
+                funcbody:;
                     extract_lexem(parser);
                     astnode* comp = parse_compound(parser);
                     if(!comp){
@@ -550,9 +598,12 @@ astnode* parse_postfix(dulparser*parser){
                     if(l_->t == SPECIAL && l_->sp == Cbrace){
                         //okay
                         extract_lexem(parser);
-                        astnode*nn = astnode_new(FUNCDEF, 2, 2, astnode_new(NULL_, 0, 0), comp);
+                        if(!args)
+                            args = astnode_new(NULL_, 0, 0);
+                        astnode*nn = astnode_new(FUNCDEF, 2, 2, args, comp);
                         nn->val = (void*)strdup("lambda");
                         main = astnode_new(FUNCCALL, 2, 2, main, nn);
+                        bind_to_lexem(main, l_);
                     } else {
                         main = 0;
                     }

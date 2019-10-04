@@ -10,6 +10,11 @@ app = object{
                 res = this.router[path](params)
                 server.__finalize(conn, res)
     this.sendPage = server.page_send
+    .route = fun(path)
+        app = this
+        return fun (callback)
+            app.router[path] = callback
+        
 }
 
 

@@ -22,7 +22,25 @@ static char * build_dir = "/Users/jernicozz/Documents/_Dulang/Niolang/";
 static object* mods;
 
 void init_mods(){
+    //takes control over flow but it has to
     mods = new_ob();
+    const char * modlist [] = {
+        "./__array.dul"
+    };
+    for(int i = 0; i <sizeof(modlist)/sizeof(const char *); ++i){
+        funcobject * f = file_to_fo(modlist[i]);
+        struct _crt * c = start_coro(work_pool, f);
+        context * ctx = c->sttop;
+        while(work_pool->workload)
+            exec_thread();
+        char * mname = strdup(strrchr(modlist[i], '/') +1);
+        mname = strtok(mname, ".");
+        object * mod_obj = new_ob();
+        for(int i = 0; i<f->namecount; ++i)
+            ob_subscr_set(mod_obj, strfromchar(f->varnames[i]), ctx->vars[i]);
+        add_module(mname, mod_obj);
+        
+    }
 }
 
 int cmd_count = 4;
@@ -85,9 +103,13 @@ object* import_module(char*fname){
 void launch_file(char*fname){
     if(fname[0]!='/'){
         //need to glue to build_dir
-        char* fullname = malloc(strlen(build_dir) + strlen(fname) + 1);
-        sprintf(fullname, "%s/%s", build_dir, fname);
+        char * dirname = malloc(1000);
+        char * cwd= getcwd(dirname, 1000);
+        char* fullname = malloc(strlen(cwd) + strlen(fname) + 2);
+        sprintf(fullname, "%s/%s", cwd, fname);
         fname = fullname;
+        
+        
     } else {
         char* b = strdup(fname);
         build_dir = dirname(b);
@@ -150,7 +172,7 @@ void execute_command(char* command){
 }
 
 
-object* getmodule(char*name){
+__weak object* getmodule(char*name){
     return ob_subscr_get(mods, strfromchar(name));
 }
 

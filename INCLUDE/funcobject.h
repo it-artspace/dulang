@@ -23,6 +23,12 @@ typedef struct fobj {
     object**statics;
     //statics are atomic types or funcobjects that are pre-evaluated
     // are evaluated on opcode funcdef
+    struct {
+        //fname here must be guaranteed fopen
+        char * fname;
+        int lineno;
+        int linepos;
+    } filepos;
     int namecount;
     int argcount;
     int statcount;
@@ -39,6 +45,8 @@ typedef struct fobj {
         int arg;
         int lineno;
         int linepos;
+        //for operands and result
+        object * opcache[4];
     } *byteops;
     
 } funcobject;
