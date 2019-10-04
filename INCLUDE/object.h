@@ -5,9 +5,12 @@
 //  Created by Дмитрий Маслюков on 02/05/2019.
 //  Copyright © 2019 Дмитрий Маслюков. All rights reserved.
 //
-
+#ifndef __weak
+#define __weak __attribute__((weak))
+#endif
 #ifndef object_h
 #define object_h
+
 #include <stdio.h>
 struct obtype;
 typedef struct dulobject {
