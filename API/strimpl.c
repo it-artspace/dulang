@@ -7,6 +7,7 @@
 //
 
 #include "../api.h"
+#include <math.h>
 #define STRCAP 15
 #define EXPERIMENTAL_CONS 1
 object* str_len   (object* self, binarg Args){
