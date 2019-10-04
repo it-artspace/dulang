@@ -40,7 +40,7 @@ memblock * new_block(){
     nb->space_left = BLOCKSIZE;
     nb->next = 0;
     nb->prev = 0;
-    nb->current = mmap(NULL, BLOCKSIZE, PROT_READ | PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);
+    nb->current = mmap(NULL, BLOCKSIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
     nb->ptr = nb->current;
     return nb;
 }
