@@ -143,7 +143,7 @@ void str_subscr_set(object*s, object*i, object*c){
     char former = self->content[(int)pos->val];
     self->content[(int)pos->val] = to_insert->content[0];
     //recount hash requires only recount of pos->val -th member
-    self->hash += (int)(to_insert->content[0] - former) * pow(POL, pos->val);
+    //self->hash += (int)(to_insert->content[0] - former) * pow(POL, pos->val);
 }
 
 typedef struct {
