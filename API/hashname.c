@@ -11,8 +11,8 @@
 unsigned int hashstr(const char*str){
     int res = 0;
     for(int i = 0; i<strlen(str);++i){
-        res+=(str[i]-'A');
         res*=POL;
+        res+=(str[i]-'A');
     }
     return res;
 }
@@ -20,8 +20,8 @@ unsigned int hashstr(const char*str){
 unsigned int hashname_n(const char * str, int len){
     int res = 0;
     for(int i = 0; i<len;++i){
-        res+=(str[i]-'A');
         res*=POL;
+        res+=(str[i]-'A');
     }
     return res;
 }

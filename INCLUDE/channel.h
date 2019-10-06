@@ -17,7 +17,7 @@ typedef struct {
     int capacity;
     object * receive_callback;
 } dulchannel;
-
+typedef struct ctx context;
 BIN_DECL(new_channel);
 METHOD_DECL(push);
 extern const struct obtype CHANTYPE;

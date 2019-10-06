@@ -7,6 +7,7 @@
 //
 
 #include "../INCLUDE/context.h"
+#include "../buildscript.h"
 #include "../INCLUDE/dulthread.h"
 #include "../api.h"
 #include "../debuginfo.h"
@@ -82,7 +83,7 @@ Begin: ;
                     binarg a;
                     a.aptr = ctx->stackptr -= _op->arg - 1;
                     a.a_passed = _op->arg;
-                    push((object*)ctx->writer, a);
+                    push((object*)ctx->writer, a, ctx);
 #else
                     printf("%s\n", dump);
 #endif
@@ -428,7 +429,8 @@ Begin: ;
             context * async_ctx = newcoro->sttop;
             for(int i = 0; i<ctx->co_static->namecount; ++i){
                 async_ctx->vars[i] = ctx->vars[i];
-                INCREF(async_ctx->vars[i]);
+                if(ctx->vars[i])
+                    INCREF(async_ctx->vars[i]);
             }
             async_ctx->inst_pointer = ctx->inst_pointer;
             async_ctx->stop_ptr = ctx->inst_pointer+_op->arg;
@@ -622,8 +624,10 @@ context* init_context(const funcobject*co_static, struct _crt*coro){
     for(int i = 0; i<co_static->namecount; ++i)
         ctx->vars[i] = 0;
     eval_std(ctx);
-    if(coro)
+    if(coro){
         coro->sttop = ctx;
+        ctx->outer_scope = coro->sttop;
+    }
     return ctx;
 }
 

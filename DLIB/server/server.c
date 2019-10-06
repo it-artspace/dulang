@@ -27,7 +27,11 @@ static const char * okhdr = "HTTP/1.1 200 OK\r\nContent-length:";
 static const char * okbody = "\r\nContent-Type: %s\r\nConnection: close\r\n\r\n";
 static const char * statdir = "";
 
-
+BIN_DECL(set_stat){
+    dulstring * a = *Args.aptr;
+    statdir = strndup(a->content, a->len);
+    return 0;
+}
 
 BIN_DECL(page_send){
     dulstring * fname = (dulstring*)*Args.aptr;
@@ -79,6 +83,7 @@ BIN_DECL(__listen){
             portno = NumValOf(ob_portno);
         }
     }
+    
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in servaddr;
     servaddr.sin_family    = AF_INET;
@@ -90,9 +95,17 @@ BIN_DECL(__listen){
     bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     listen(sockfd, 100);
     printf("listening %d", portno);
-    char * dirbuf = malloc(1000);
-    statdir = getcwd(dirbuf, 1000);
-    strcat(dirbuf, "/static/");
+    if(strcmp(statdir, "")==0){
+        char * dirbuf = malloc(1000);
+        statdir = getcwd(dirbuf, 1000);
+        strcat(dirbuf, "/static/");
+    }
+    
+    int pid = fork();
+    if(pid)
+        exit(0);
+    setsid();
+    chdir("/");
     //printf("%s", dirbuf);
     return 0;
 }

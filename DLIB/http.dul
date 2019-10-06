@@ -1,8 +1,8 @@
 import "server/server.ffi"
 app = object{
     this.router = object()
-    this.launch = fun()
-        server.__listen(9378)
+    this.launch = fun(portno)
+        server.__listen(portno)
         while true
             accept = server.__accept()
             if accept
@@ -15,6 +15,7 @@ app = object{
         return fun (callback)
             app.router[path] = callback
         
+    .setStatic = server.set_stat
 }
 
 

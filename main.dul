@@ -1,5 +1,7 @@
-t = time(  )
-a = "101"
-for _ in range( 10000000 )
-	a = a + "1"
-write time(  ) - t
+import "http.dul"
+import "fs/fs.ffi"
+app = http.app
+app.route("/"){ request ->
+	return app.sendPage("/Users/jernicozz/Downloads/dulfront/develop/landing.html")
+}
+app.launch(8080)

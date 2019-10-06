@@ -83,6 +83,14 @@ BIN_DECL(new_channel){
     return (object*)c;
 }
 
+METHOD_DECL(chanGetAsync){
+    dulchannel * s = (dulchannel*)self;
+    if(s->first == s->last){
+        ctx->inst_pointer--;
+    }
+    return 0;
+}
+
 static struct {
     const char * name;
     bin_method m;

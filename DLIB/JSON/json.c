@@ -192,7 +192,7 @@ object * parse_array(struct arrtok_iter * i){
         binarg A;
         A.aptr = &val;
         A.a_passed = 1;
-        append(o, A);
+        append(o, A, 0);
         if(i->arr.tokens[i->pos].type == jscsbr){
             break;
         }

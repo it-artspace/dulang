@@ -47,8 +47,7 @@ void* workloop(void*a){
                 exit(0);
             pthread_cond_wait(&workload_cond, &workload_lock);
         }
-        while(current_thread->workload)
-            exec_thread();
+        exec_thread_(current_thread);
         pthread_mutex_unlock(&workload_lock);
     }
     return 0;

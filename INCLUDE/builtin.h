@@ -16,8 +16,8 @@ struct _crt;
 
 typedef object* (*binfptr)      (binarg Args);
 typedef object* (*method_ptr)   (object* self, binarg Args);
-#define METHOD_DECL(name) object* name(object*self, binarg Args)
-#define BIN_DECL(name)  object* name(binarg Args)
+#define METHOD_DECL(name) object* name(object*self, binarg Args, context*ctx)
+#define BIN_DECL(name)  object* name(binarg Args, context*ctx)
 
 typedef struct {
     ObHead

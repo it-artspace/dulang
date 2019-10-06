@@ -26,6 +26,7 @@ typedef struct ctx{
     object* this_ptr;
     exprobject * cur_expr;
     struct ctx* return_to;
+    struct ctx* outer_scope;
     dulchannel * writer;
     struct _crt* coroutine;
     int non_destroy;

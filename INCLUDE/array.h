@@ -22,6 +22,7 @@ extern const struct obtype ARRTYPE;
 extern const struct obtype ARRITER;
 object* array_subscr_get(object*, object*);
 void array_subscr_set(object*, object*, object*);
+typedef struct ctx context;
 METHOD_DECL(length);
 METHOD_DECL(append);
 struct arr_iter{

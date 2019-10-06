@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 
 
-BIN_DECL(read){
+BIN_DECL(__read){
     dulstring * path = (dulstring*)*Args.aptr;
     path->content[path->len] = 0;
     FILE * f = fopen(path->content, "r");
@@ -58,4 +58,8 @@ BIN_DECL(dirTree){
     }
     closedir(dir);
     return 0;
+}
+
+BIN_DECL(_system){
+    dulstring * arg = *Args.aptr;
 }

@@ -209,11 +209,11 @@ object* __bin_array     (binarg Args){
             object * iter_val = iter->type->unpack_iter(iter);
             a.a_passed = 1;
             a.aptr = &iter_val;
-            append((object*)arr, a);
+            append((object*)arr, a, 0);
             iter = iter->type->iter_next(iter);
         }
     } else {
-        append((object*)arr, Args);
+        append((object*)arr, Args, 0);
     }
     return (object*)arr;
 }
