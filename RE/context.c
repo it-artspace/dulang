@@ -498,7 +498,8 @@ Begin: ;
             for(int i = 0; i<ctx->co_static->namecount; ++i){
                
                     //otherwise is private
-                    ob_subscr_set(ctx->this_ptr, strfromchar(ctx->co_static->varnames[i]), ctx->vars[i]);
+                    if(ctx->vars[i]->type->type_id != bin_func_id)
+                        ob_subscr_set(ctx->this_ptr, strfromchar(ctx->co_static->varnames[i]), ctx->vars[i]);
                 
             }
         }break;

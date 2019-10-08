@@ -26,7 +26,7 @@ void    dulfree(void*);
 void    dulfree_ob(void*);
 void*   ob_alloc(unsigned long);
 void setup_aa(void);
-#define INCREF(obptr) if (!((long)obptr & 1)) (obptr)->refcnt++;
+#define INCREF(obptr) if (obptr) (obptr)->refcnt++;
 #define DECREF(obptr) if(!((long)obptr & 1) && !--(obptr)->refcnt) ob_dealloc(obptr);
 
 #endif /* object_h */

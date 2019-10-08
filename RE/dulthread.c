@@ -141,10 +141,12 @@ get_coro:;
     const int _lock_null = 0;
     const int _lock_one = 1;
     do{
+        if(!t->current)
+            goto get_coro;
         t->current = t->current->next;
     }while(t->current->state != coro_running);
     
-    atomic_store(&t->coro_lock, 0);
+    //atomic_store(&t->coro_lock, 0);
 ctx_exec:;
     context * ctx = t->current->sttop;
     if(!ctx)
@@ -665,6 +667,7 @@ ctx_exec:;
                 for(int i = 0; i<ctx->co_static->namecount; ++i){
                    
                         //otherwise is private
+                    if(ctx->vars[i]->type->type_id != bin_func_id)
                         ob_subscr_set(ctx->this_ptr, strfromchar(ctx->co_static->varnames[i]), ctx->vars[i]);
                     
                 }
@@ -706,6 +709,8 @@ ctx_exec:;
             }
             //decref_thread_workload(t);
             ctx->coroutine->sttop = ctx->return_to;
+            if(!ctx->coroutine->sttop)
+                decref_thread_workload(t);
             goto get_coro;
         } else {
             if(t->workload == 1 && ctx == ctx->coroutine->sttop){
