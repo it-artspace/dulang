@@ -20,7 +20,8 @@
 #include <math.h>
 
 
-
+BIN_DECL(__finalize);
+BIN_DECL(_set_stat);
 
 
 
@@ -29,7 +30,7 @@ static const char * okhdr = "HTTP/1.1 200 OK\r\nContent-length:";
 static const char * okbody = "\r\nContent-Type: %s\r\nConnection: close\r\n\r\n";
 static const char * statdir = "";
 
-BIN_DECL(set_stat){
+object * _set_stat(binarg Args, context * ctx){
     dulstring * a = *Args.aptr;
     statdir = strndup(a->content, a->len);
     return 0;
@@ -102,13 +103,15 @@ BIN_DECL(__listen){
         statdir = getcwd(dirbuf, 1000);
         strcat(dirbuf, "/static/");
     }
-    
+#define release 0
+#if release
     int pid = fork();
     if(pid)
         exit(0);
     setsid();
     umask(0);
     chdir("/");
+#endif
     //printf("%s", dirbuf);
     return 0;
 }
@@ -231,7 +234,7 @@ BIN_DECL(__accept){
         iterparam = strtok(iterparam, "&");
     }
     //lets read some headers but actually we are most interested in Content-length
-    char * body_begin = strstr(rdbuf, "\r\n\r\n") + 4;
+    /*char * body_begin = strstr(rdbuf, "\r\n\r\n") + 4;
     if(body_begin[1]!='0'){
         dulstring * rdr = strfromchar(body_begin);
         dulstring * buffer = allocstr();
@@ -241,7 +244,7 @@ BIN_DECL(__accept){
         while((bytes_read = read(clfd, buffer->content, 4096))){
             rdr = str_iadd(rdr, buffer);
         }
-    }
+    }*/
     
     return mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
 }

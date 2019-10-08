@@ -7,16 +7,15 @@ app = object{
             accept = server.__accept()
             if accept
                 conn, path, params = accept
-                async
-                    res = this.router[path](params)
-                    server.__finalize(conn, res)
+                res = this.router[path](params)
+                server.__finalize(conn, res)
     this.sendPage = server.page_send
     .route = fun(path)
         app = this
         return fun (callback)
             app.router[path] = callback
         
-    .setStatic = server.set_stat
+    .setStatic = server._set_stat
 }
 
 

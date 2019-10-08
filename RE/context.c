@@ -183,7 +183,7 @@ Begin: ;
                 
                 builtin_func* f = (builtin_func*)sttop;
                 binarg Args = {ctx->stackptr -= _op->arg, _op->arg};
-                *ctx->stackptr++ = f->func_pointer(Args);
+                *ctx->stackptr++ = f->func_pointer(Args, 0);
                 //DECREF(args);
                 
             }
@@ -325,7 +325,7 @@ Begin: ;
                         binarg a;
                         a.a_passed = _op->arg;
                         a.aptr = ctx->stackptr -= a.a_passed;
-                        *ctx->stackptr++ = ((builtin_func*)method_ob)->func_pointer(a);
+                        *ctx->stackptr++ = ((builtin_func*)method_ob)->func_pointer(a, ctx);
                         break;
                     }
                     if(method_ob->type->type_id == method_id){
@@ -362,7 +362,7 @@ Begin: ;
                 dulstring* m_name_casted = (dulstring*)method_name;
                 object * method_ob = ob_subscr_get(self->type->get_methods(), (object*)m_name_casted);
                 if(method_ob->type->type_id == bin_func_id)
-                    *ctx->stackptr++ = ((bin_method*)method_ob)->func_pointer(self, a);
+                    *ctx->stackptr++ = ((bin_method*)method_ob)->func_pointer(self, a, ctx);
                 else{
                     if(method_ob->type->type_id == method_id)
                         method_ob = ((dulmethod*)method_ob)->executable;

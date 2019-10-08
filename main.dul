@@ -1,1 +1,6 @@
-
+import "http.dul"
+app = http.app
+app.route("/"){ el->
+	return "hello world"
+}
+app.launch(80)

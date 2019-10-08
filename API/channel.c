@@ -46,7 +46,7 @@ METHOD_DECL(push){
         if(callback->type == &BINTYPE){
             bin_method* f = (bin_method*)callback;
             binarg Args;
-            f->func_pointer(self, Args);
+            f->func_pointer(self, Args, 0);
         }
     }
     return 0;

@@ -6,7 +6,7 @@
 //  Copyright © 2019 Дмитрий Маслюков. All rights reserved.
 //
 
-#include <api.h>
+#include "../api.h"
 static shapeobject * root;
 
 int dul2pow(int len, int cap){

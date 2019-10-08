@@ -105,7 +105,7 @@ object* import_module(char*fname){
     strtok(rdbuf, "\n");
     if(*rdbuf != '/'){
         char * buf = strdup(rdbuf);
-        sprintf(rdbuf, "%s%s/%s", getenv("HOME"), "Dulang/NIolang", rdbuf);
+        sprintf(rdbuf, "%s%s/%s", getenv("HOME"), "/Dulang/NIolang", buf);
     }
     void* lib = dlopen(rdbuf, RTLD_NOW);
     if(!lib){

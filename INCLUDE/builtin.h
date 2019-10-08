@@ -14,10 +14,10 @@
 
 struct _crt;
 
-typedef object* (*binfptr)      (binarg Args);
-typedef object* (*method_ptr)   (object* self, binarg Args);
-#define METHOD_DECL(name) object* name(object*self, binarg Args, context*ctx)
-#define BIN_DECL(name)  object* name(binarg Args, context*ctx)
+typedef object* (*binfptr)      (binarg Args, struct ctx*);
+typedef object* (*method_ptr)   (object* self, binarg Args, struct ctx *);
+#define METHOD_DECL(name) object* name(object*self, binarg Args, struct ctx*ctx)
+#define BIN_DECL(name)  object* name(binarg Args, struct ctx*ctx)
 
 typedef struct {
     ObHead
