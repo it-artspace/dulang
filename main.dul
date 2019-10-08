@@ -1,2 +1,6 @@
 import "http.dul"
-write http
+app = http.app
+app.route("/"){ req->
+	return "hello world"
+}
+app.launch(8093)

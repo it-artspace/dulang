@@ -98,7 +98,7 @@ object* new_ob(void){
     obj->refcnt = 0;
     obj->type = &SINOBTYPE;
     obj->shape = root;
-    obj->f_values = 0;
+    obj->f_values = malloc(sizeof(object*)*root->cap);
     return (object*)obj;
 }
 

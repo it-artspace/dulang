@@ -151,10 +151,13 @@ char*   dump_object     (object*self){
 
 void obj_dealloc(object*s){
     single_ob*self = (single_ob*)s;
+    if(!self->shape)
+        return;
     for(int i = 0; i <self->shape->cap; ++i){
         if(self->f_values[i])
             DECREF(self->f_values[i]);
     }
+    free(self->f_values);
     
 }
 

@@ -306,9 +306,10 @@ ctx_exec:;
                         fprintf(stderr, "in function %d parameter passed but %d expected\n",
                             _op->arg, ((funcobject*)sttop)->argcount);
                     }
-                    for(int i = ((funcobject*)sttop)->argcount - 1; i>=0; --i)
+                    for(int i = ((funcobject*)sttop)->argcount - 1; i>=0; --i){
                         c->vars[i] = *--ctx->stackptr;
-                    
+                        INCREF(c->vars[i]);
+                    }
                 }
                 if(sttop->type->type_id == bin_func_id){
                     
@@ -479,8 +480,10 @@ ctx_exec:;
                                 fprintf(stderr, "cannot invoke method of not string type: %s\n", method_name->type->name);
                                 break;
                             }
-                            for(int i = 0; i<((funcobject*)method_ob)->argcount; ++i)
+                            for(int i = 0; i<((funcobject*)method_ob)->argcount; ++i){
                                 c->vars[i] = *--ctx->stackptr;
+                                INCREF(c->vars[i]);
+                            }
                             for(int i = 0; i<((funcobject*)method_ob)->namecount; ++i){
                                 if(strcmp("this", ((funcobject*)method_ob)->varnames[i]) == 0){
                                     c->vars[i] = self;
