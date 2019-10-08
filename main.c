@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include "buildscript.h"
 #include <pthread.h>
+#include <execinfo.h>
+#include <signal.h>
 
 FILE* output = 0;
 #define addr "addr"
@@ -53,7 +55,26 @@ void* workloop(void*a){
     return 0;
 }
 
+int handle_segfault(){
+    void *callstack[128];
+    int frames = backtrace(callstack, 128);
+    char **strs=backtrace_symbols(callstack, frames);
+    // тут выводим бэктрейс в файлик crash_report.txt
+    // можно так же вывести и иную полезную инфу - версию ОС, программы, etc
+    FILE *f = fopen("crash_report.txt", "w");
+    if (f){
+        for(int i = 0; i < frames; ++i){
+            fprintf(f, "%s\n", strs[i]);
+        }
+        fclose(f);
+    }
+    free(strs);
+    exit(-1);
+    return 0;
+}
+
 int main(int argc, const char * argv[]) {
+    signal(SIGSEGV, handle_segfault);
     init_shapes();
     init_mods();
     pthread_t work_tid;
