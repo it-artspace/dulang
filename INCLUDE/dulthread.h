@@ -45,6 +45,7 @@ typedef struct thread dulthread;
 extern struct thread work_pool[numthreads];
 extern struct thread*less_loaded;
 extern volatile struct thread*current_thread;
+extern volatile int final_context;
 int exec_thread(void);
 //returns 0 on finish
 void exec_thread_(struct thread * t);

@@ -133,8 +133,11 @@ void exec_thread_(dulthread * t){
     
 get_coro:;
     int codes_block = 0;
-    while(!t->workload)
+    while(!t->workload){
+        if(final_context)
+            pthread_exit(0);
         pthread_cond_wait(&t->empty, &t->mutex);
+    }
     const int _lock_null = 0;
     const int _lock_one = 1;
     do{
