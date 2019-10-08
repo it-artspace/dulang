@@ -144,6 +144,8 @@ get_coro:;
     atomic_store(&t->coro_lock, 0);
 ctx_exec:;
     context * ctx = t->current->sttop;
+    if(!ctx)
+        goto get_coro;
     if(codes_block > 100 && t->workload != 1)
         goto get_coro;
     struct op * _op = ctx->inst_pointer++;

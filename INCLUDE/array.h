@@ -20,6 +20,7 @@ typedef struct {
 
 extern const struct obtype ARRTYPE;
 extern const struct obtype ARRITER;
+extern object * arrm;
 object* array_subscr_get(object*, object*);
 void array_subscr_set(object*, object*, object*);
 typedef struct ctx context;
