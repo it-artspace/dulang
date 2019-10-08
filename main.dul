@@ -1,7 +1,6 @@
-import "http.dul"
-import "fs/fs.ffi"
-app = http.app
-app.route("/"){ request ->
-	return app.sendPage("/Users/jernicozz/Downloads/dulfront/develop/landing.html")
-}
-app.launch(8080)
+a = 0
+t = time()
+x = "x"
+for i in range(10000000)
+	0
+write time() - t

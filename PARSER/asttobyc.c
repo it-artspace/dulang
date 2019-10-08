@@ -379,9 +379,18 @@ void write_node(funcobject* writer, astnode*node){
             
             break;
         case SUBSCR:
-            write_node(writer, node->children[1]);
-            write_node(writer, node->children[0]);
-            write_op(writer, _subscr_get, 0);
+            if(node->children[1]->type == STRLIT){
+                object * prop = strfromchar((char*)node->children[1]->val);
+                add_literal(writer, prop);
+                int prop_idx = writer->statcount - 1;
+                write_node(writer, node->children[0]);
+                write_op(writer, load_stat_subscr, prop_idx);
+            } else {
+                write_node(writer, node->children[1]);
+                write_node(writer, node->children[0]);
+                write_op(writer, _subscr_get, 0);
+            }
+            
             break;
         case DULRETURN:
             write_node(writer, node->children[0]);

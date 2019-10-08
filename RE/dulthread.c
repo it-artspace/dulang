@@ -144,6 +144,8 @@ get_coro:;
     atomic_store(&t->coro_lock, 0);
 ctx_exec:;
     context * ctx = t->current->sttop;
+    if(!ctx)
+        goto get_coro;
     if(codes_block > 100 && t->workload != 1)
         goto get_coro;
     struct op * _op = ctx->inst_pointer++;
@@ -317,9 +319,9 @@ ctx_exec:;
                         //is invoked as constructor
                         object * o = new_ob();
                         single_ob * self = (single_ob*)sttop;
-                        for(int i = 0; i< self->cap; ++i){
-                            if(self->content[i].name){
-                                ob_subscr_set(o, self->content[i].name, self->content[i].member);
+                        for(int i = 0; i< self->shape->cap; ++i){
+                            if(self->shape->fieldnames[i]){
+                                ob_subscr_set(o, self->shape->fieldnames[i], self->f_values[i]);
                             }
                         }
                         *ctx->stackptr++ = o;
@@ -522,6 +524,33 @@ ctx_exec:;
                 object* subscribant = *--ctx->stackptr;
                 *ctx->stackptr++ = o->type->subscript_get(o, subscribant);
                
+            }break;
+            case load_stat_subscr:{
+                object * o = *--ctx->stackptr;
+                if(!o){
+                    break;
+                }
+                if(o->type->type_id == object_id){
+                    //can be inline cached
+                    single_ob * obj = (single_ob*)o;
+                    if((object*)obj->shape == _op->opcache[0]){
+                        //if cache matches previous operand
+                        long pos = (long)_op->opcache[1];
+                        *ctx->stackptr++ = ob_sub_offt(obj, pos);
+                    } else {
+                        _op->opcache[0] = (object*)obj->shape;
+                        long pos = dulshape_get_offset(obj->shape, ctx->co_static->statics[_op->arg]);
+                        _op->opcache[1] = (object*)pos;
+                        *ctx->stackptr++ = ob_sub_offt(obj, pos);
+                    }
+                } else {
+                    //perform usual subscr
+                    if(o->type->subscript_get){
+                        *ctx->stackptr++ = o->type->subscript_get(o, ctx->co_static->statics[_op->arg]);
+                    } else {
+                        *ctx->stackptr++ = 0;
+                    }
+                }
             }break;
             case _subscr_set:{
                 object* o = *--ctx->stackptr;

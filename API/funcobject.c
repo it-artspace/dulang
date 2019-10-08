@@ -52,7 +52,8 @@ const char *opcode_repres_ [] =  {
     "expr_stop",
     "pack_mod",
     "push_object",
-    "store_iter"
+    "store_iter",
+    "load_stat_prop"
 };
 
 void destroy_func(object*f){

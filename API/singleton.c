@@ -49,50 +49,14 @@ const struct obtype METHODTYPE = {
     method_id //typeid
 };
 
-char fast_str_check(object * str1, object *str2){
-    if(!str1 || !str2)
-        return 0;
-    dulstring * s1 = (dulstring*)str1;
-    dulstring * s2 = (dulstring*)str2;
-    int len1 = s1->len;
-    int len2 = s2->len;
-    if(s1->hash != s2->hash)
-        return 0;
-    if(len1 != len2)
-        return 0;
-    //lets treat as int to reduce register pushes
-    for(int i = 0; i < len1;++i){
-        if(s1->content[i] != s2->content[i])
-            return 0;
-    }
-    return 1;
-}
 
-object* new_ob(void){
-    single_ob* obj = (single_ob*)dulalloc(sizeof(single_ob));
-    obj->refcnt = 0;
-    obj->type = &SINOBTYPE;
-    obj->count = 0;
-    obj->cap = 32;
-    obj->content = malloc(sizeof(struct obentry)*32);
-    for(int i = 0; i<32; ++i){
-        obj->content[i].name = 0;
-        obj->content[i].member = 0;
-    }
-    return (object*)obj;
-}
+
+
 
 object* ob_subscr_get   (const object*self, object * s_name){
-    char*name = ((dulstring*)s_name)->content;
     single_ob*t = (single_ob*)self;
-    unsigned int index = ((dulstring*)s_name)->hash % t->cap;
-    int itercount = 0;
-    while(t->content[index].name && !fast_str_check(t->content[index].name, s_name)){
-        index = (index * 5 + 1) % t->cap;
-        if(itercount++ == t->cap)
-            return 0;
-    }
-    return t->content[index].member;
+    int pos = dulshape_get_offset(t->shape, s_name);
+    return pos>=0?t->f_values[pos]:0;
 }
 
 void ob_subscr_set(object*self, object*name, object*target){
@@ -109,46 +73,19 @@ void ob_subscr_set(object*self, object*name, object*target){
         target = (object*)method;
     }
     INCREF(name);
-    single_ob* table = (single_ob*)self;
-    char * rname = ((dulstring*)name)->content;
-    if(table->count *2 >= table->cap){
-        struct obentry * oldcontent = table->content;
-        int oldcap = table->cap;
-        table->content = malloc(sizeof(struct obentry)*(table->cap*=2));
-        bzero(table->content, oldcap * 2 * sizeof(struct obentry));
-        table->count = 0;
-        for(int i = 0; i<oldcap; ++i){
-            if(oldcontent[i].name)
-                ob_subscr_set(self, oldcontent[i].name, oldcontent[i].member);
-        }
-        free(oldcontent);
-#warning TODO: index recount
-    }
-    unsigned int index = hashstr(rname) % table->cap;
-    struct obentry * head = (table->content + index);
-    if(!(head->name)){
-        //can be inserted just here, most commonly used case
-        head->name = name;
-        table->count++;
-        head->member = target;
+    if(name->type->type_id != string_id){
         return;
     }
-    //actually we are guaranteed with free place for insertion by ratio 1 : 2
-
-    while(table->content[index].name){
-        if(fast_str_check(table->content[index].name, name)){
-            //insertion on existing
-            if((table->content + index)->member)
-                DECREF(table->content[index].member);
-            (table->content + index)->member= target;
-            (table->content + index)->name = name;
-            return;
-        }
-        index = (index * 5 + 1) % table->cap;
+    single_ob * t = (single_ob*)self;
+    int pos = dulshape_get_offset(t->shape, name);
+    if(pos >= 0){
+        DECREF(t->f_values[pos]);
+        t->f_values[pos] = target;
+    } else {
+        //need transition
+        int idx = dulshape_transit(t, (dulstring*)name);
+        t->f_values[idx] = target;
     }
-    table->count ++;
-    (table->content + index)->name = name;
-    (table->content + index)->member = target;
 }
 
 
@@ -186,26 +123,23 @@ const struct obtype SINOBTYPE = {
 
 char*   dump_object     (object*self){
     single_ob* s = (single_ob*)self;
-    if(s->count == 0)
+    if(s->shape->len == 0)
         return strdup("{}");
     char* dump = (char*)dulalloc(10000);
     char*writer = dump;
     writer+= sprintf(writer, "{");
-    for(int i = 0; i<s->cap;++i){
-        if(s->content[i].name){
-            writer+= sprintf(writer, "%s: ", ((dulstring*)s->content[i].name)->content);
-            object * member = s->content[i].member;
+    for(int i = 0; i<s->shape->cap;++i){
+        if(s->shape->fieldnames[i]){
+            writer+= sprintf(writer, "%s: ", s->shape->fieldnames[i]->content);
+            object * member = s->f_values[i];
             if(member->type->dump){
-                char*localdump = s->content[i].member->type->dump(s->content[i].member);
+                char*localdump = member->type->dump(member);
                 writer+= sprintf(writer, "%s, ", localdump);
                 free(localdump);
             } else {
                 writer+= sprintf(writer, "%s at %p, ", member->type->name, member);
             }
-            
         }
-        
-        
     }
     if(writer!=dump){
         writer-=2;
@@ -217,11 +151,9 @@ char*   dump_object     (object*self){
 
 void obj_dealloc(object*s){
     single_ob*self = (single_ob*)s;
-    for(int i = 0; i<32; ++i){
-        if(self->content[i].member){
-            DECREF(self->content[i].member);
-            DECREF(self->content[i].name);
-        }
+    for(int i = 0; i <self->shape->cap; ++i){
+        if(self->f_values[i])
+            DECREF(self->f_values[i]);
     }
     
 }
@@ -263,8 +195,8 @@ object* init_obj_iter(const object*o){
     new_iter->type = &OBJITERTYPE;
     new_iter->obj = (single_ob*)o;
     int i;
-    for(i = 0; i<((single_ob*)o)->cap && !new_iter->obj->content[i].name; ++i);
-    if(i == ((single_ob*)o)->cap){
+    for(i = 0; i<((single_ob*)o)->shape->cap && !new_iter->obj->shape->fieldnames[i]; ++i);
+    if(i == ((single_ob*)o)->shape->cap){
         //empty
         free(new_iter);
         return 0;
@@ -279,8 +211,8 @@ object* obj_iter_next(object*iter){
     do{
         i->pos++;
         
-    }while(i->pos < i->obj->cap && !i->obj->content[i->pos].name);
-    if(i->pos == i->obj->cap){
+    }while(i->pos < i->obj->shape->cap && !i->obj->shape->fieldnames[i->pos]);
+    if(i->pos == i->obj->shape->cap){
         free(i);
         return 0;
     }
@@ -289,7 +221,7 @@ object* obj_iter_next(object*iter){
 
 object* unpack_obj_iter   (const object*i){
     obj_iterator*iter = (obj_iterator*)i;
-    return iter->obj->content[iter->pos].name;
+    return iter->obj->shape->fieldnames[iter->pos];
 }
 
 char ob_contains_field  (const object*self, const object*other){

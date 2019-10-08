@@ -188,14 +188,14 @@ Begin: ;
                 
             }
            
-            if(strcmp(sttop->type->name, "object")==0){
+            if(sttop->type->type_id == object_id){
                 if(_op->arg == 0){
                     //is invoked as constructor
                     object * o = new_ob();
                     single_ob * self = (single_ob*)sttop;
-                    for(int i = 0; i< self->cap; ++i){
-                        if(self->content[i].name){
-                            ob_subscr_set(o, self->content[i].name, self->content[i].member);
+                    for(int i = 0; i< self->shape->cap; ++i){
+                        if(self->shape->fieldnames[i]){
+                            ob_subscr_set(o, self->shape->fieldnames[i], self->f_values[i]);
                         }
                     }
                     *ctx->stackptr++ = o;

@@ -54,6 +54,7 @@ void* workloop(void*a){
 }
 
 int main(int argc, const char * argv[]) {
+    init_shapes();
     init_mods();
     pthread_t work_tid;
     pthread_attr_t attrs;

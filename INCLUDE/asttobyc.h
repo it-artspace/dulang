@@ -72,7 +72,8 @@ enum opcodes {
     ret_from_expr,
     pack_module,
     push_object,
-    store_iter
+    store_iter,
+    load_stat_subscr
 };
 
 /*

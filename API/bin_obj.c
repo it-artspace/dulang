@@ -38,10 +38,10 @@ object* __bin_object(binarg Args){
                 return 0;
             }
             single_ob* o = (single_ob*)Args.aptr[i];
-            for(int prop_index = 0; prop_index<o->cap; ++prop_index){
-                if(o->content[prop_index].name){
-                    object* m = o->content[prop_index].member;
-                    ob_subscr_set(obj, o->content[prop_index].name, m);
+            for(int prop_index = 0; prop_index<o->shape->cap; ++prop_index){
+                if(o->shape->fieldnames[i]){
+                    object* m = o->f_values[prop_index];
+                    ob_subscr_set(obj, o->shape->fieldnames[i], m);
                 }
             }
         }
