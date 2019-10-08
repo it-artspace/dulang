@@ -15,11 +15,13 @@
 #include <netdb.h> /* struct hostent, gethostbyname */
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 #include <pthread.h>
 #include <ctype.h>
 #include <math.h>
+
+
+
+
 
 
 static int sockfd;
@@ -105,6 +107,7 @@ BIN_DECL(__listen){
     if(pid)
         exit(0);
     setsid();
+    umask(0);
     chdir("/");
     //printf("%s", dirbuf);
     return 0;
@@ -228,7 +231,17 @@ BIN_DECL(__accept){
         iterparam = strtok(iterparam, "&");
     }
     //lets read some headers but actually we are most interested in Content-length
-    
+    char * body_begin = strstr(rdbuf, "\r\n\r\n") + 4;
+    if(body_begin[1]!='0'){
+        dulstring * rdr = strfromchar(body_begin);
+        dulstring * buffer = allocstr();
+        buffer->content = realloc(buffer->content, 4096);
+        buffer->cap = 4096;
+        int bytes_read;
+        while((bytes_read = read(clfd, buffer->content, 4096))){
+            rdr = str_iadd(rdr, buffer);
+        }
+    }
     
     return mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
 }

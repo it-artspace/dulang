@@ -7,8 +7,9 @@ app = object{
             accept = server.__accept()
             if accept
                 conn, path, params = accept
-                res = this.router[path](params)
-                server.__finalize(conn, res)
+                async
+                    res = this.router[path](params)
+                    server.__finalize(conn, res)
     this.sendPage = server.page_send
     .route = fun(path)
         app = this

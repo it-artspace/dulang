@@ -16,17 +16,42 @@
 #include <pthread.h>
 #include <unistd.h>
 
-static char * build_dir = "/Users/jernicozz/Documents/_Dulang/Niolang/";
+static char * build_dir = 0;
 //first place to lookup files with non-absolute path
 
 static object* mods;
+static struct {
+    const char * name;
+    bin_method m;
+} arr_methods [] = {{
+    "length", {
+        &BINTYPE,
+        1,
+        &length
+    }}, {
+        "append", {
+            &BINTYPE,
+            1,
+            &append
+        }}};
+static int arr_mc = 2;
+void init_arr_methods(){
+    arrm = getmodule("__array");
+    for(int i = 0; i<arr_mc; ++i){
+        ob_subscr_set(arrm, (object*)strfromchar(arr_methods[i].name), (object*)&arr_methods[i].m);
+    }
+}
+
+
 
 void init_mods(){
     
     //takes control over flow but it has to
     mods = new_ob();
+    build_dir = malloc(1000);
+    sprintf(build_dir, "%s/%s", getenv("HOME"), "Dulang/NIolang");
     const char * modlist [] = {
-        "./__array.dul"
+        "__array.dul"
     };
     for(int i = 0; i <sizeof(modlist)/sizeof(const char *); ++i){
         funcobject * f = file_to_fo(modlist[i]);
@@ -34,7 +59,7 @@ void init_mods(){
         context * ctx = c->sttop;
         while(work_pool->workload)
             exec_thread();
-        char * mname = strdup(strrchr(modlist[i], '/') +1);
+        char * mname = strdup(modlist[i]);
         mname = strtok(mname, ".");
         object * mod_obj = new_ob();
         for(int i = 0; i<f->namecount; ++i)
@@ -42,6 +67,7 @@ void init_mods(){
         add_module(mname, mod_obj);
         
     }
+    init_arr_methods();
 }
 
 int cmd_count = 4;
@@ -77,6 +103,10 @@ object* import_module(char*fname){
     fprintf(output, "importing module %s...\n\n", rdbuf);
     fgets(rdbuf, 1024, f);
     strtok(rdbuf, "\n");
+    if(*rdbuf != '/'){
+        char * buf = strdup(rdbuf);
+        sprintf(rdbuf, "%s%s/%s", getenv("HOME"), "Dulang/NIolang", rdbuf);
+    }
     void* lib = dlopen(rdbuf, RTLD_NOW);
     if(!lib){
         fprintf(stderr, "cannot open library %s, aborting", rdbuf);
@@ -178,7 +208,7 @@ __weak object* getmodule(char*name){
 }
 
 funcobject * file_to_fo(char * fname){
-    if(fname[0]!='/'){
+    if(access(fname, F_OK)==-1){
         //need to glue to build_dir
         char* fullname = malloc(strlen(build_dir) + strlen(fname) + 2);
         sprintf(fullname, "%s/%s", build_dir, fname);
