@@ -9,7 +9,7 @@
 #ifndef debuginfo_h
 #define debuginfo_h
 #define print_lexems 0
-#define print_ast  0
+#define print_ast  1
 #define print_bytecode 0
 #define print_opcode_run 0
 #define socket_runner 0

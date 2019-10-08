@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-static char * build_dir = "/Users/jernicozz/Documents/_Dulang/Niolang/";
+static char * build_dir = 0;
 //first place to lookup files with non-absolute path
 
 static object* mods;
@@ -102,6 +102,10 @@ object* import_module(char*fname){
     fprintf(output, "importing module %s...\n\n", rdbuf);
     fgets(rdbuf, 1024, f);
     strtok(rdbuf, "\n");
+    if(*rdbuf != '/'){
+        char * buf = strdup(rdbuf);
+        sprintf(rdbuf, "%s%s/%s", getenv("HOME"), "Dulang/NIolang", rdbuf);
+    }
     void* lib = dlopen(rdbuf, RTLD_NOW);
     if(!lib){
         fprintf(stderr, "cannot open library %s, aborting", rdbuf);
