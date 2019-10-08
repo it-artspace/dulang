@@ -49,7 +49,7 @@ void init_mods(){
     //takes control over flow but it has to
     mods = new_ob();
     build_dir = malloc(1000);
-    sprintf(build_dir, "%s/%s", getenv("HOME"), "Dulang/NIolang");
+    sprintf(build_dir, "%s/%s", getenv("HOME"), "/Dulang/NIolang");
     const char * modlist [] = {
         "__array.dul"
     };
@@ -215,7 +215,7 @@ funcobject * file_to_fo(char * fname){
         fname = fullname;
     } else {
         char* b = strdup(fname);
-        build_dir = dirname(b);
+        //build_dir = dirname(b);
     }
     funcobject*f = load_file(fname);
     return f;
