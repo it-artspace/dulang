@@ -1,6 +1,3 @@
-import "http.dul"
-app = http.app
-app.route("/"){ req->
-	return "hello world"
+write object{
+	.x = 100
 }
-app.launch(8093)

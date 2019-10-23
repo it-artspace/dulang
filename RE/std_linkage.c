@@ -11,63 +11,63 @@
 
 #define DULMIN(a,b) a<b?a:b
 
-const builtin_func dump = {
+builtin_func dump = {
     &BINTYPE,
     1,
     "obdump",
     &__bin_obdump
 };
 
-const builtin_func range = {
+builtin_func range = {
     &BINTYPE,
     1,
     "range",
     &__bin_range
 };
 
-const builtin_func obj = {
+builtin_func obj = {
     &BINTYPE,
     1,
     "object",
     &__bin_object
 };
 
-const builtin_func typeof_ = {
+builtin_func typeof_ = {
     &BINTYPE,
     1,
     "typeof",
     &__bin_typeof
 };
 
-const builtin_func str_ = {
+builtin_func str_ = {
     &BINTYPE,
     1,
     "str",
     &__bin_str
 };
 
-const builtin_func chan_ = {
+builtin_func chan_ = {
     &BINTYPE,
     1,
     "channel",
-    &new_channel
+    &Dulnew_channel
 };
 
-const builtin_func time_ = {
+builtin_func time_ = {
     &BINTYPE,
     1,
     "time",
     &__bin_time
 };
-const builtin_func array = {
+builtin_func array = {
     &BINTYPE,
     1,
     "array",
     &__bin_array
 };
 
-const builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_, &time_, &array};
-const int bin_count = 8;
+builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_, &time_, &array};
+const int bin_count = sizeof(bins)/sizeof(object*);
 
 void eval_std (context*ctx){
     for(int i = 0; i<ctx->co_static->namecount; ++i){

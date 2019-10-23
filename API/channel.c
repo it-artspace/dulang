@@ -9,6 +9,7 @@
 #include "../api.h"
 #include "../INCLUDE/dulthread.h"
 
+
 METHOD_DECL(setCallback){
     if(Args.a_passed != 1){
         fprintf(stderr, "in setCallback 1 argument expected but %d passed", Args.a_passed);
@@ -33,15 +34,18 @@ METHOD_DECL(push){
     }
     if(self_->receive_callback!=0){
         object* callback = self_->receive_callback;
-        if(callback->type == &FUNCTYPE){
-#warning change on multithreading
-            context* c = init_context((funcobject*)callback, current_thread->current);
+        if(callback->type->type_id == func_id){
+            context* c = init_context((funcobject*)callback, ctx->coroutine);
+            object* to_ret = _mktuple(self_->last, (int)(self_->last - self_->first));
+            self_->last = self_->first;
             for(int i = 0; i<((funcobject*)callback)->namecount; ++i){
                 if(strcmp(((funcobject*)callback)->varnames[i], "this")==0){
                     c->vars[i] = self;
                     c->this_ptr = self;
                 }
             }
+            c->vars[0] = to_ret;
+            INCREF(to_ret);
         }
         if(callback->type == &BINTYPE){
             bin_method* f = (bin_method*)callback;
@@ -83,12 +87,15 @@ BIN_DECL(new_channel){
     return (object*)c;
 }
 
-METHOD_DECL(chanGetAsync){
+METHOD_DECL(wait_all){
     dulchannel * s = (dulchannel*)self;
     if(s->first == s->last){
         ctx->inst_pointer--;
+        return 0;
     }
-    return 0;
+    object* to_ret = _mktuple(s->last, (int)(s->last - s->first));
+    s->last = s->first;
+    return to_ret;
 }
 
 static struct {
@@ -114,8 +121,15 @@ static struct {
         &BINTYPE,
         1,
         &get_all
-}}};
-static int chan_mc = 4;
+    }}, {
+    "waitAll", {
+        &BINTYPE,
+        1,
+        &wait_all
+    }}
+    
+};
+static int chan_mc = sizeof(chan_methods)/sizeof(*chan_methods);
 
 
 object * get_chan_methods(void){

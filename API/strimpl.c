@@ -10,12 +10,44 @@
 #include <math.h>
 #define STRCAP 15
 #define EXPERIMENTAL_CONS 1
-object* str_len   (object* self, binarg Args){
+object* str_len   (object* self, binarg Args, context * __){
     if(Args.a_passed > 0){
         fprintf(stderr, "expected 0 arguments in len method but %d passed", Args.a_passed);
         return 0;
     }
-    return numfromdouble(((dulstring*)self)->len);
+    return numfromlong(((dulstring*)self)->len);
+}
+
+METHOD_DECL(str_slice){
+    dulstring * sliceable = (dulstring*)self;
+    dulstring * slicer = (dulstring*)*Args.aptr;
+    binarg _Args;
+    _Args.a_passed = 0;
+    object * arr = __bin_array(_Args);
+    char * slicee = sliceable->content;
+    while(slicee<=sliceable->content + sliceable->len){
+        char * end_of_slice = strstr(slicee, slicer->content);
+        if(!end_of_slice){
+            end_of_slice = sliceable->content + sliceable->len;
+        }
+        dulstring * s = (dulstring*)allocstr();
+        s->is_copy = 1;
+        s->is_cons = 0;
+        s->content = slicee;
+        s->len = (int)(end_of_slice - slicee);
+        s->content = slicee;
+        _Args.a_passed = 1;
+        _Args.aptr = &s;
+        if(s->len!=0){
+             append(arr, _Args, 0);
+        } else {
+            ob_dealloc(s);
+        }
+       
+#warning TODO: restrict length
+        slicee = end_of_slice + 1;
+    }
+    return arr;
 }
 
 
@@ -73,8 +105,17 @@ static struct {
         1,
         &strformat
     }
-}};
-static int str_methods_count = 2;
+    },{
+    "slice",
+    {
+        &BINTYPE,
+        1,
+        str_slice
+    }
+    }
+    
+};
+static int str_methods_count = 3;
 
 object* get_str_methods(void){
     static object * methods;
@@ -232,7 +273,7 @@ object * str_iadd(object * left, object * right){
     }
     strncpy(l->content + l->len, r->content, r->len);
     l->len += r->len;
-    l->hash += hashname_n(l->content, l->len);
+    l->hash = hashname_n(l->content, l->len);
     return (object*)l;
 }
 
@@ -280,11 +321,17 @@ void dump_cons(dulstring* cstring, char * where_to){
 
 
 char* dumpstr(object*self){
-    char*ptr = (char*)dulalloc(((dulstring*)self)->len+1);
+    char*ptr = (char*)dulalloc(((dulstring*)self)->len+3);
+    ptr[0] = '"';
     dulstring * s = (dulstring*)self;
     int byteno = ((dulstring*)self)->len;
-    dump_cons(s, ptr);
-    ptr[byteno] = 0;
+    if(s->is_cons)
+        dump_cons(s, ptr);
+    else{
+        strncpy(ptr+1, s->content, s->len);
+    }
+    ptr[byteno+1] = '"';
+    ptr[byteno +2] = 0;
     return ptr;
 }
 
@@ -300,9 +347,10 @@ object* allocstr(void){
 
 void destrstr(object*self){
     dulstring*s = (dulstring*)self;
-    if(!s->is_cons)
-        free(s->content);
-    else{
+    if(!s->is_cons){
+        if(!s->is_copy)
+            free(s->content);
+    }else{
         DECREF(s->cons.left);
         DECREF(s->cons.right);
     }

@@ -28,12 +28,13 @@ void add_literal(funcobject*writer, object*literal){
     writer->statics[writer->statcount - 1] = literal;
 }
 
-void write_op(funcobject*self, int opcode, int arg){
+struct op * write_op(funcobject*self, int opcode, int arg){
     if(self->opcount++ == self->op_cap){
         self->byteops = realloc(self->byteops, sizeof(*self->byteops) * (self->op_cap<<=1));
     }
     self->byteops[self->opcount - 1].op_code = opcode;
     self->byteops[self->opcount - 1].arg = arg;
+    return self->byteops + (self->opcount - 1);
 }
 
 void add_name(funcobject* self, char* name){
@@ -133,7 +134,7 @@ void load_func_process_storenames( astnode* current, funcobject* currfunc, funco
     }
 }
 
-void load_func(funcobject* writer, astnode*funroot){
+struct op * load_func(funcobject* writer, astnode*funroot){
     funcobject* new_writer = init_func(writer);
     extract_names(new_writer, funroot->children[0]);
     new_writer->argcount = new_writer->namecount;
@@ -168,9 +169,9 @@ void load_func(funcobject* writer, astnode*funroot){
     write_node(new_writer, funroot->children[1]);
     write_op(new_writer, push_null, 0);
     if(funroot->val!=0 && strcmp((char*)funroot->val, "lambda")!=0)
-        write_op(writer, store_name, nametable_lookup(writer, (char*)funroot->val));
+        return write_op(writer, store_name, nametable_lookup(writer, (char*)funroot->val));
     
-    
+    return 0;
 }
 
 void extract_names(funcobject*writer, astnode*node){
@@ -228,7 +229,7 @@ int find_name_recursively(funcobject*w, char*name){
     return val + (1 << 16);
 }
 
-void write_if(funcobject* writer, astnode*ifnode){
+struct op * write_if(funcobject* writer, astnode*ifnode){
     write_node(writer, ifnode->children[0]);
     write_op(writer, jump_if_not_true, 0);
     int pos_jne = writer->opcount -1 ;
@@ -242,10 +243,11 @@ void write_if(funcobject* writer, astnode*ifnode){
         int jump_offset = writer->opcount - pos_jump - 1;
         writer->byteops[pos_jump].arg = jump_offset;
     }
+    return 0;
 }
 
 
-void write_for(funcobject*writer, astnode*node){
+struct op * write_for(funcobject*writer, astnode*node){
     write_node(writer, node->children[0]->children[1]);
     
     char* iter_name;
@@ -275,11 +277,12 @@ void write_for(funcobject*writer, astnode*node){
     write_op(writer, jump, ret_pos - writer->opcount - 1);
     writer->byteops[ret_pos].arg =writer->opcount - ret_pos - 1;
     //free(iter_name);
+    return 0;
 }
 
 
 
-void write_assign(funcobject*writer, astnode*node){
+struct op * write_assign(funcobject*writer, astnode*node){
     switch (node->type) {
         case NAME:
             write_op(writer, store_name, nametable_lookup(writer, (char*)node->val));
@@ -303,10 +306,11 @@ void write_assign(funcobject*writer, astnode*node){
             fprintf(stderr, "expression %s cannot be on the left part of assign\n", "<>");
             break;
     }
+    return 0;
 }
 
 
-void write_inplace(funcobject* writer, astnode*node, enum opcodes code){
+struct op * write_inplace(funcobject* writer, astnode*node, enum opcodes code){
     switch(node->children[0]->type){
         case SUBSCR:
             //here we need to explicitly check refcount and call set_subscr
@@ -318,10 +322,11 @@ void write_inplace(funcobject* writer, astnode*node, enum opcodes code){
             
         default: break;
     }
+    return 0;
 }
 
 
-void write_node(funcobject* writer, astnode*node){
+struct op *  write_node(funcobject* writer, astnode*node){
     switch (node->type) {
         case IFSTAT:
             write_if(writer, node);
@@ -438,6 +443,7 @@ void write_node(funcobject* writer, astnode*node){
                 write_op(writer, doasync, 0);
                 int pos = writer->opcount - 1;
                 write_node(writer, node->children[0]);
+                write_op(writer, push_null, 0);
                 writer->byteops[pos].arg = writer->opcount - pos - 1;
             }while(0);
             break;
@@ -570,6 +576,7 @@ void write_node(funcobject* writer, astnode*node){
         default:
             break;
     }
+    return 0;
 }
 
 void write_expression(exprobject*wr, funcobject*parent, astnode*node){

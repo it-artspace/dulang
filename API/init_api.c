@@ -6,4 +6,8 @@
 //  Copyright © 2019 Дмитрий Маслюков. All rights reserved.
 //
 
-#include <stdio.h>
+#include "../api.h"
+ 
+void DulAPI_init(void){
+    init_shapes();
+}

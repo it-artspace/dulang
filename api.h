@@ -32,6 +32,8 @@
 #include "INCLUDE/asttoJS.h"
 #include "INCLUDE/dulmethod.h"
 #include "INCLUDE/dulint.h"
+#include "INCLUDE/dulthread.h"
+
 #if 0
 #define use_area
 #endif

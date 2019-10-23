@@ -7,6 +7,16 @@
 //
 
 #include "../api.h"
+
+object* new_ob(void){
+    single_ob* obj = (single_ob*)dulalloc(sizeof(single_ob));
+    obj->refcnt = 0;
+    obj->type = &SINOBTYPE;
+    obj->shape = get_root();
+    obj->f_values = malloc(sizeof(object*)*obj->shape->cap);
+    return (object*)obj;
+}
+
 char * dump_method(object*m){
     char * mem = malloc(50);
     dulmethod * method = (dulmethod*)m;

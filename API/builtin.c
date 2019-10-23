@@ -212,6 +212,7 @@ object* __bin_array     (binarg Args){
             append((object*)arr, a, 0);
             iter = iter->type->iter_next(iter);
         }
+        (void)iter;
     } else {
         append((object*)arr, Args, 0);
     }

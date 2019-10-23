@@ -9,6 +9,11 @@
 #include "../api.h"
 static shapeobject * root;
 
+const shapeobject * get_root(void){
+    return root;
+}
+
+
 int dul2pow(int len, int cap){
     //checks if len + 1 overcomes 50% of cap and returns appropriate capacity
     //cap is power of 2 so is returned
@@ -36,14 +41,17 @@ char fast_str_check(object * str1, object *str2){
 }
 
 void init_shapes(){
-    root = malloc(sizeof(shapeobject));
-    root->children_count = 0;
-    root->children_cap = 15;
-    root->children = malloc(sizeof(*root->children)*15);
-    root->len = 0;
-    root->cap = 32;
-    root->fieldnames = malloc(sizeof(dulstring*)*32);
-    bzero(root->fieldnames, root->cap * sizeof(object*));
+    if(!root){
+        root = malloc(sizeof(shapeobject));
+        root->children_count = 0;
+        root->children_cap = 15;
+        root->children = malloc(sizeof(*root->children)*15);
+        root->len = 0;
+        root->cap = 32;
+        root->fieldnames = malloc(sizeof(dulstring*)*32);
+        bzero(root->fieldnames, root->cap * sizeof(object*));
+    }
+    
 }
 
 int dulshape_get_offset(shapeobject*shape, object * key){
@@ -93,12 +101,5 @@ int dulshape_transit(single_ob * obj, dulstring * prop){
     return idx;
 }
 
-object* new_ob(void){
-    single_ob* obj = (single_ob*)dulalloc(sizeof(single_ob));
-    obj->refcnt = 0;
-    obj->type = &SINOBTYPE;
-    obj->shape = root;
-    obj->f_values = malloc(sizeof(object*)*root->cap);
-    return (object*)obj;
-}
+
 

@@ -44,7 +44,7 @@ typedef struct thread dulthread;
 #define flush_stdout
 extern struct thread work_pool[numthreads];
 extern struct thread*less_loaded;
-extern volatile struct thread*current_thread;
+extern volatile struct thread* current_thread __attribute__((weak_import));
 extern volatile int final_context;
 int exec_thread(void);
 //returns 0 on finish
@@ -52,10 +52,14 @@ void exec_thread_(struct thread * t);
 
 struct _crt * start_coro( struct thread* thr, funcobject* func );
 void destroy_coro(struct _crt*);
-extern const builtin_func *bins[];
+extern builtin_func *bins[];
 extern const int bin_count;
 void thread_error(char * errmsgfmt, ...);
 
 
+void ctx_trshoot(context*, char * errmsg) __attribute__((weak_import));
+#pragma weak init_context
+#pragma weak current_thread
+context* init_context(const funcobject*, struct _crt*coro) __attribute__((weak));
 
 #endif /* dulthread_h */

@@ -249,4 +249,3 @@ BIN_DECL(__accept){
     return mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
 }
 
-

@@ -77,7 +77,21 @@ struct _crt * start_coro( struct thread* thr, funcobject* func ) {
     return coro;
 }
 
-
+void ctx_trshoot(context*problematic, char * errmsg){
+    context * callee = problematic;
+    fprintf(stderr, "Error %s, traceback\n", errmsg);
+    while(callee){
+        struct {
+            char * fname;
+            int lineno;
+            int linepos;
+        } filepos;
+        memcpy(&filepos, &callee->co_static->filepos, sizeof(filepos));
+        fprintf(stderr, "In %s at (%d:%d)\n", filepos.fname, filepos.lineno, filepos.linepos);
+        callee->inst_pointer = callee->stop_ptr + 1;
+        callee = callee->return_to;
+    }
+}
 
 
 int exec_thread(void){
@@ -333,6 +347,11 @@ ctx_exec:;
                         *ctx->stackptr++ = o;
                         break;
                     }
+                    single_ob * receiver = (single_ob*)sttop;
+                    int offt;
+                    if(( offt = dulshape_get_offset(receiver->shape, strfromchar("init"))) >=0 ){
+                        dulmethod * ini_m = (dulmethod*)ob_sub_offt(receiver, offt);
+                    }
                     object* args = *--ctx->stackptr;
                     /*Это костыль*/
                     
@@ -416,8 +435,10 @@ ctx_exec:;
                 void* fptr = left->type->plus_op;
                 if(fptr)
                     *ctx->stackptr++ = left->type->plus_op(left, right);
-                else
+                else{
                     fprintf(stderr, "cannot add to %s type\n", left->type->name);
+                    ctx_trshoot(ctx, "add operation break");
+                }
             } break;
             case op_minus:{
                 object*right = *--ctx->stackptr;
@@ -670,7 +691,8 @@ ctx_exec:;
                 for(int i = 0; i<ctx->co_static->namecount; ++i){
                    
                         //otherwise is private
-                    if(ctx->vars[i]->type->type_id != bin_func_id)
+                    
+                    if(ctx->vars[i] && (ctx->vars[i]->type->type_id != bin_func_id || ctx->vars[i]->type->type_id != bin_m_id))
                         ob_subscr_set(ctx->this_ptr, strfromchar(ctx->co_static->varnames[i]), ctx->vars[i]);
                     
                 }

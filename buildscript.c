@@ -107,7 +107,7 @@ object* import_module(char*fname){
         char * buf = strdup(rdbuf);
         sprintf(rdbuf, "%s%s/%s", getenv("HOME"), "/Dulang/NIolang", buf);
     }
-    void* lib = dlopen(rdbuf, RTLD_LAZY | RTLD_GLOBAL);
+    void* lib = dlopen(rdbuf, RTLD_NOW);
     if(!lib){
         fprintf(stderr, "cannot open library %s, aborting", rdbuf);
     }

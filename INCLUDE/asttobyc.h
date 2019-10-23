@@ -13,12 +13,12 @@
 
 funcobject* load_file(const char* fname);
 void extract_names(funcobject*, astnode*);
-void write_op(funcobject*, int, int);
-void load_func(funcobject* writer, astnode*);
-void write_assign(funcobject* writer, astnode*);
-void write_node(funcobject* writer, astnode*);
-void write_if(funcobject*, astnode*);
-void write_for(funcobject*, astnode*);
+struct op * write_op(funcobject*, int, int);
+struct op * load_func(funcobject* writer, astnode*);
+struct op * write_assign(funcobject* writer, astnode*);
+struct op *  write_node(funcobject* writer, astnode*);
+struct op * write_if(funcobject*, astnode*);
+struct op * write_for(funcobject*, astnode*);
 funcobject* init_func(const funcobject*);
 void write_expression(exprobject*, funcobject*, astnode*);
 

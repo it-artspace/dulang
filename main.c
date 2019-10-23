@@ -25,9 +25,7 @@ FILE* output = 0;
 
 FILE*alloc_log = 0;
 
-int f(int a, int b){
-    return a + b;
-}
+
 
 int exec( char* inpuf )
 {
@@ -73,9 +71,9 @@ int handle_segfault(int sig){
 }
 
 int main(int argc, const char * argv[]) {
+    init_shapes();
     signal(SIGSEGV, handle_segfault);
     signal(SIGBUS, handle_segfault);
-    init_shapes();
     init_mods();
     pthread_t work_tid;
     pthread_attr_t attrs;

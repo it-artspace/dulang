@@ -8,6 +8,8 @@
 
 #include "../api.h"
 #include "../INCLUDE/dulthread.h"
+#include "../INCLUDE/context.h"
+
 object* __bin_object(binarg Args){
     if(Args.a_passed == 0)
         return new_ob();

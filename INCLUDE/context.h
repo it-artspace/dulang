@@ -13,7 +13,6 @@
 #include "channel.h"
 #define use_writer 1
 struct thread;
-struct w;
 struct _crt;
 typedef struct ctx{
     object** vars;
@@ -32,7 +31,7 @@ typedef struct ctx{
     int non_destroy;
 } context;
 
-context* init_context(const funcobject*, struct _crt*coro);
+context* init_context(const funcobject*, struct _crt*coro) __attribute__((weak_import));
 void     link_async(context*);
 //here we think that start and stop op are managed correctly
 void link_context(context*);

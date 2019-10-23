@@ -159,7 +159,15 @@ object* nummult(object*left, object*right){
     dulnumber* res = (dulnumber*)ob_alloc(sizeof(dulnumber));
     res->type = &NUMTYPE;
     res->refcnt = 0;
-    res->val = ((dulnumber*)left)->val * ((dulnumber*)right)->val;
+    dulnumber * l = (dulnumber *)left;
+    dulnumber * r = (dulnumber *)right;
+    res->n_type = l->n_type && r->n_type;
+    if(res->n_type){
+        res->i_val = NumValOf(l) * NumValOf(r);
+    }else{
+        res->val = NumValOf(l) * NumValOf(r);
+    }
+    
     return (object*)res;
 }
 
