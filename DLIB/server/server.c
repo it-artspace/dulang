@@ -184,7 +184,9 @@ BIN_DECL(accept){
     char rdbuf [4096];
 #warning TODO: post req
         //firstly read the headers
-    read(clfd, rdbuf, 4096);
+    int bread = 0;
+    while(strstr(rdbuf, "/r/n/r/n")!=0)
+        bread += read(clfd, rdbuf+bread, 4096);
     char type[10];
     char path [1024];
     sscanf(rdbuf, "%s%s", type, path);
