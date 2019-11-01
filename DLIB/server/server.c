@@ -165,7 +165,7 @@ BIN_DECL(finalize){
     connection * c = (connection*)Args.aptr[0];
     dulstring * s = (dulstring*)Args.aptr[1];
     s->content[s->len] = 0;
-    if(strnstr(s->content, "HTTP/1.1", s->len) == 0){
+    if(strncmp(s->content, "HTTP/1.1", 8) == 0){
         write(c->clfd, okhdr, strlen(okhdr));
         char clen [10];
         sprintf(clen, "%d", s->len);
