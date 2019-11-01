@@ -126,6 +126,8 @@ object* import_module(char*fname){
         to_enplace->name = strdup(rdbuf);
         ob_subscr_set((object*)obj, strfromchar(rdbuf), (object*)to_enplace);
     }
+    void (*initializer)(void) = dlsym(lib, "DulAPI_init");
+    initializer();
     ob_subscr_set(mods, strfromchar(modname), (object*)obj);
     fclose(f);
     return (object*)obj;

@@ -2,20 +2,24 @@ import "server/server.ffi"
 app = object{
     this.router = object()
     this.launch = fun(portno)
-        server.__listen(portno)
+        server.Dullisten(portno)
         while true
-            accept = server.__accept()
+            accept = server.Dulaccept()
             if accept
                 conn, path, params = accept
-                res = this.router[path](params)
-                server.__finalize(conn, res)
-    this.sendPage = server.page_send
+                handler = this.router[path]
+                if handler
+                    res = handler(params)
+                else
+                    res = "404 error for path $0".format(path)
+                server.Dulfinalize(conn, res)
+    this.sendPage = server.Dulpage_send
     .route = fun(path)
         app = this
         return fun (callback)
             app.router[path] = callback
         
-    .setStatic = server._set_stat
+    .setStatic = server.Dul_set_stat
 }
 
 

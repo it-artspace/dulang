@@ -20,8 +20,8 @@
 #include <math.h>
 
 
-BIN_DECL(__finalize);
-BIN_DECL(_set_stat);
+BIN_DECL(finalize);
+BIN_DECL(set_stat);
 
 
 
@@ -30,7 +30,7 @@ static const char * okhdr = "HTTP/1.1 200 OK\r\nContent-length:";
 static const char * okbody = "\r\nContent-Type: %s\r\nConnection: close\r\n\r\n";
 static const char * statdir = "";
 
-object * _set_stat(binarg Args, context * ctx){
+object * Dul_set_stat(binarg Args, context * ctx){
     dulstring * a = *Args.aptr;
     statdir = strndup(a->content, a->len);
     return 0;
@@ -71,7 +71,7 @@ BIN_DECL(page_send){
 
 
 
-BIN_DECL(__listen){
+BIN_DECL(listen){
     // arg is portno
     int portno;
     object * arg = *Args.aptr;
@@ -161,9 +161,10 @@ connection * new_conn(int clfd){
 }
 
 
-BIN_DECL(__finalize){
+BIN_DECL(finalize){
     connection * c = (connection*)Args.aptr[0];
     dulstring * s = (dulstring*)Args.aptr[1];
+    s->content[s->len] = 0;
     if(strnstr(s->content, "HTTP/1.1", s->len) == 0){
         write(c->clfd, okhdr, strlen(okhdr));
         char clen [10];
@@ -178,7 +179,7 @@ BIN_DECL(__finalize){
     return 0;
 }
 
-BIN_DECL(__accept){
+BIN_DECL(accept){
     int clfd = accept(sockfd, 0, 0);
     char rdbuf [4096];
 #warning TODO: post req

@@ -164,7 +164,7 @@ void obj_dealloc(object*s){
     if(!self->shape)
         return;
     for(int i = 0; i <self->shape->cap; ++i){
-        if(self->f_values[i])
+        if(self->shape->fieldnames[i])
             DECREF(self->f_values[i]);
     }
     free(self->f_values);

@@ -9,6 +9,10 @@
 #include "../api.h"
 static shapeobject * root;
 
+void DulAPI_init(void){
+    init_shapes();
+}
+
 const shapeobject * get_root(void){
     return root;
 }

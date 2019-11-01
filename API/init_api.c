@@ -8,6 +8,3 @@
 
 #include "../api.h"
  
-void DulAPI_init(void){
-    init_shapes();
-}

@@ -34,16 +34,16 @@ object* __bin_object(binarg Args){
     } else {
         object* obj = new_ob();
         for(int i = 0; i<Args.a_passed; ++i){
-            if(strcmp(Args.aptr[i]->type->name, "object")!=0){
+            if(Args.aptr[i]->type->type_id !=object_id){
                 fprintf(stderr, "cannot inherit object from %s type", Args.aptr[i]->type->name);
                 obj_dealloc(obj);
                 return 0;
             }
             single_ob* o = (single_ob*)Args.aptr[i];
             for(int prop_index = 0; prop_index<o->shape->cap; ++prop_index){
-                if(o->shape->fieldnames[i]){
+                if(o->shape->fieldnames[prop_index]){
                     object* m = o->f_values[prop_index];
-                    ob_subscr_set(obj, o->shape->fieldnames[i], m);
+                    ob_subscr_set(obj, o->shape->fieldnames[prop_index], m);
                 }
             }
         }

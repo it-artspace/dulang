@@ -1,3 +1,13 @@
-write object{
-	.x = 100
+import "http.dul"
+import "html.dul"
+app = http.app
+
+app.route("/"){ req->
+	return html.Document(){
+		.div{
+			.text = "hello world"
+		}
+	}.render()
 }
+
+app.launch(8080)

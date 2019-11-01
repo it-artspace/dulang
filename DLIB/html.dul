@@ -1,12 +1,15 @@
+
+
+
 fun createNode(tag)
     return object{
         @tag = tag
         @children = array()
         @style = object()
-        @div = fun(init_func)
+        .div = fun(init_func)
             new_elem = object(this)(init_func)
-            new_elem.tag = "div"
             new_elem.children = array()
+            new_elem.tag = "div"
             @children.append(new_elem)
         @render = fun()
             str_acc = "<$0 style='".format(@tag)
