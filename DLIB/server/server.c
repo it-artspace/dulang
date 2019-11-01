@@ -185,7 +185,7 @@ BIN_DECL(accept){
 #warning TODO: post req
         //firstly read the headers
     int bread = 0;
-    while(strstr(rdbuf, "/r/n/r/n")==0)
+    while(strstr(rdbuf, "\r\n\r\n")==0)
         bread += read(clfd, rdbuf+bread, 4096);
     char type[10];
     char path [1024];
