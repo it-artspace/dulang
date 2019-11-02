@@ -9,6 +9,7 @@
 #include "../../api.h"
 #include "../../INCLUDE/dulthread.h"
 #include <stdio.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
@@ -165,7 +166,7 @@ BIN_DECL(finalize){
     connection * c = (connection*)Args.aptr[0];
     dulstring * s = (dulstring*)Args.aptr[1];
     s->content[s->len] = 0;
-    if(strncmp(s->content, "HTTP/1.1", 8) == 0){
+    if(strncmp(s->content, "HTTP/1.1", 8) != 0){
         write(c->clfd, okhdr, strlen(okhdr));
         char clen [10];
         sprintf(clen, "%d", s->len);
@@ -174,7 +175,9 @@ BIN_DECL(finalize){
         write(c->clfd, clen, strlen(clen));
         write(c->clfd, body, strlen(body));
     }
-    write(c->clfd, s->content, s->len);
+    int written = write(c->clfd, s->content, s->len);
+    printf("written = %d, errno = %d, msg = '%s'\n", written, errno, s->content);
+    shutdown(c->clfd, SHUT_RDWR);
     close(c->clfd);
     return 0;
 }
@@ -191,8 +194,9 @@ BIN_DECL(accept){
             return 0;
         bread += read;
         rdbuf[ bread ] = 0;
-        printf( "Got %d, %s\n", read, rdbuf );
+        // printf( "Got %d, %s\n", read, rdbuf );
     }
+	printf( "Got command '%s'\n", rdbuf );
     char type[10];
     char path [1024];
     sscanf(rdbuf, "%s%s", type, path);

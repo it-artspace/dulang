@@ -12,7 +12,7 @@
 
 const struct obtype BINTYPE = {
     "builtin",
-    0, //dump
+    0, //dump  
     0, //alloc
     0, //dealloc
     0, //+

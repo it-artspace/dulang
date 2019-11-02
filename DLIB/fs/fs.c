@@ -7,7 +7,7 @@
 //
 
 
-#include <api.h>
+#include "api.h"
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -118,5 +118,5 @@ BIN_DECL(system){
         //ctx_trshoot(ctx, "Not enough args passed to system");
     }
     dulstring * arg = *Args.aptr;
-    
+    return 0;
 }

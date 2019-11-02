@@ -6,7 +6,7 @@
 //  Copyright © 2019 Дмитрий Маслюков. All rights reserved.
 //
 
-#include <api.h>
+#include "api.h"
 #include <assert.h>
 /*
  algoritm: split into symbols, then iterating over them bring the object that lies in root
