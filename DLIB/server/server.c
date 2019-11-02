@@ -194,7 +194,7 @@ BIN_DECL(accept){
             return 0;
         bread += read;
         rdbuf[ bread ] = 0;
-        // printf( "Got %d, %s\n", read, rdbuf );
+        printf( "Got %d, %s\n", read, rdbuf );
     }
 	printf( "Got command '%s'\n", rdbuf );
     char type[10];
