@@ -189,7 +189,7 @@ BIN_DECL(accept){
         //firstly read the headers
     int bread = 0;
     while(strstr(rdbuf, "\r\n\r\n")==0){
-        int read = recv(clfd, rdbuf+bread, 4096, 0);
+        int read = recv(clfd, rdbuf+bread, 4096, MSG_WAITALL);
         if( read < 0 )
             return 0;
         bread += read;
