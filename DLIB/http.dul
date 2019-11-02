@@ -8,7 +8,7 @@ app = object{
             if accept
                 conn, path, params = accept
                 write .router
-                handler = this.router[path]
+                handler = .router[path]
                 if handler
                     res = handler(params)
                 else
