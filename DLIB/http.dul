@@ -7,7 +7,7 @@ app = object{
             accept = server.Dulaccept()
             if accept
                 conn, path, params = accept
-                write accept[1]
+                write path
                 handler = this.router[path]
                 if handler
                     res = handler(params)
