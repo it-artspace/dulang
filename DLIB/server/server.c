@@ -259,6 +259,8 @@ BIN_DECL(accept){
         }
     }*/
     
-    return mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
+    object * res =  mktuple_va(3, (object*)new_conn(clfd), lookup_ob, params);
+    printf("res=%p\n", res);
+    return res;
 }
 
