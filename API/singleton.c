@@ -68,6 +68,7 @@ object* ob_subscr_get   (const object*self, object * s_name){
     int pos = dulshape_get_offset(t->shape, s_name);
     object * result = pos>=0?t->f_values[pos]:0;
     printf("pos = %d, result = %p", pos, result);
+    
     return result;
 }
 
