@@ -186,12 +186,12 @@ BIN_DECL(accept){
         //firstly read the headers
     int bread = 0;
     while(strstr(rdbuf, "\r\n\r\n")==0){
-        int read = recv(clfd, rdbuf+bread, 4096, MSG_WAITALL);
+        int read = recv(clfd, rdbuf+bread, 4096, 0);
         if( resd < 0 )
             return 0;
         bread += read;
         rdbuf[ bread ] = 0;
-        printf( "Got %s\n", rdbuf );
+        printf( "Got %d, %s\n", read, rdbuf );
     }
     char type[10];
     char path [1024];
