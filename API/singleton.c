@@ -66,7 +66,9 @@ const struct obtype METHODTYPE = {
 object* ob_subscr_get   (const object*self, object * s_name){
     single_ob*t = (single_ob*)self;
     int pos = dulshape_get_offset(t->shape, s_name);
-    return pos>=0?t->f_values[pos]:0;
+    object * result = pos>=0?t->f_values[pos]:0;
+    printf("pos = %d, result = %p", pos, result);
+    return result;
 }
 
 void ob_subscr_set(object*self, object*name, object*target){
