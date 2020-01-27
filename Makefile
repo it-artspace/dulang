@@ -3,4 +3,4 @@ API = API/bin_obj.c API/builtin.c API/dulbool.c API/rangeobject.c API/classobjec
 PARSER = PARSER/ast.c PARSER/parser.c PARSER/asttobyc.c PARSER/parse.c
 RE = RE/context.c RE/dulthread.c RE/std_linkage.c
 all:
-	clang ${API} ${PARSER} ${RE} ${MODULES} main.c buildscript.c -o ~/Dulang/DulVM -ldl -lpthread -std=gnu11 -O3 -rdynamic -g
+	gcc ${API} ${PARSER} ${RE} ${MODULES} main.c buildscript.c -o ~/Dulang/DulVM -ldl -lpthread -std=gnu11 -O3 -rdynamic -g
