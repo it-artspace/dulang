@@ -12,9 +12,9 @@ app.route("/"){ r->
         }
         .view{
             .text = "Нажми меня"
-            .on("click"){
+            .on("click")({
                 alert("меня нажали!")
-            }
+            })
         }
     }.render()
 }
