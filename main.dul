@@ -1,13 +1,21 @@
 import "http.dul"
 import "html.dul"
 app = http.app
-
-app.route("/"){ req->
-	return html.Document(){
-		.div{
-			.text = "hello world"
-		}
-	}.render()
+app.route("/"){ r->
+    return html.document{
+        .view{
+            .text = "sometext"
+            .style = object{
+                ."text-align"="center"
+                ."font-size"="2rem"
+            }
+        }
+        .view{
+            .text = "Нажми меня"
+            .on("click"){
+                alert("меня нажали!")
+            }
+        }
+    }.render()
 }
-
-app.launch(8080)
+app.launch(80)
