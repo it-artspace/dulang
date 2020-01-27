@@ -100,7 +100,7 @@ BIN_DECL(listen){
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
     bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     listen(sockfd, 100);
-    printf("listening %d", portno);
+    printf("listening %d\n", portno);
     if(strcmp(statdir, "")==0){
         char * dirbuf = malloc(1000);
         statdir = getcwd(dirbuf, 1000);
@@ -188,8 +188,10 @@ BIN_DECL(finalize){
 }
 
 BIN_DECL(accept){
-    int clfd = accept(sockfd, 0, 0);
-    printf("client fd: %d, my fd: %d", clfd, sockfd);
+    int l;
+    struct sockaddr_in addr;
+    int clfd = accept(sockfd, &addr, &l);
+    printf("client fd: %d, my fd: %d\n", clfd, sockfd);
     char rdbuf [4096];
 #warning TODO: post req
         //firstly read the headers
