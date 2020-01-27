@@ -189,6 +189,7 @@ BIN_DECL(finalize){
 
 BIN_DECL(accept){
     int clfd = accept(sockfd, 0, 0);
+    printf("client fd: %d, my fd: %d", clfd, sockfd);
     char rdbuf [4096];
 #warning TODO: post req
         //firstly read the headers
@@ -199,7 +200,7 @@ BIN_DECL(accept){
             return 0;
         bread += read;
         rdbuf[ bread ] = 0;
-        printf( "Got %d, %s\n", read, rdbuf );
+        //printf( "Got %d, %s\n", read, rdbuf );
     }
 	printf( "Got command '%s'\n", rdbuf );
     char type[10];
