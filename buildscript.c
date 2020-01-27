@@ -57,8 +57,10 @@ void init_mods(){
         funcobject * f = file_to_fo(modlist[i]);
         struct _crt * c = start_coro(work_pool, f);
         context * ctx = c->sttop;
+        final_context = 1;
         while(work_pool->workload)
-            exec_thread();
+            exec_thread_(work_pool);
+        final_context = 0;
         char * mname = strdup(modlist[i]);
         mname = strtok(mname, ".");
         object * mod_obj = new_ob();
@@ -107,7 +109,7 @@ object* import_module(char*fname){
         char * buf = strdup(rdbuf);
         sprintf(rdbuf, "%s%s/%s", getenv("HOME"), "/Dulang/NIolang", buf);
     }
-    void* lib = dlopen(rdbuf, RTLD_NOW);
+    void* lib = dlopen(rdbuf, RTLD_LAZY);
     if(!lib){
         fprintf(stderr, "cannot open library %s, aborting", rdbuf);
     }
@@ -147,7 +149,12 @@ void launch_file(char*fname){
         char* b = strdup(fname);
         build_dir = dirname(b);
     }
+    char namebuf [100];
+    sprintf(namebuf, "%s.js",fname);
     funcobject*f = load_file(fname);
+    jswriter * writer = init_writer(namebuf);
+    jswrite_node(writer, f->funcnode);
+    jswrite_tofile(writer, namebuf);
 #if print_bytecode
     char* dump = dumpfunc(f);
     fprintf(output, "%s", dump);
@@ -219,7 +226,12 @@ funcobject * file_to_fo(char * fname){
         char* b = strdup(fname);
         //build_dir = dirname(b);
     }
+    char namebuf [100];
+    sprintf(namebuf, "%s.js",fname);
     funcobject*f = load_file(fname);
+    jswriter * writer = init_writer(namebuf);
+    jswrite_node(writer, f->funcnode);
+    jswrite_tofile(writer, namebuf);
     return f;
 }
 void add_module(char * name, object * mod){

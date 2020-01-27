@@ -9,6 +9,7 @@
 #ifndef funcobject_h
 #define funcobject_h
 #include "typeInterface.h"
+#include "ast.h"
 /*
  its like a template to generate context, containing most important base info
  function is basic object in dulang: all modules are functions, all files are modules
@@ -37,6 +38,8 @@ typedef struct fobj {
     int opcount;
     int name_cap;
     int op_cap;
+    //node that contains funcdef that is to be transpiled to JS
+    astnode * funcnode;
     struct fobj* outer_scope;
     struct ctx*  outer_context;
     struct op{
@@ -48,13 +51,19 @@ typedef struct fobj {
         //for operands and result
         object * opcache[4];
     } *byteops;
-    
+    struct ctx * reused_ctx [10];
+    struct ctx ** r_ctx_stackpos;
 } funcobject;
 
 char* dumpfunc(object*);
 void fsetup(funcobject*);
 void include_standard(funcobject*); //aka module-setup
 object* invoke_lambda(funcobject*, object*_this);
+
+/// places a new context with funcobject inoked with these args
+/// @param self represents passed this-value, nullable
+/// @param argc number of passed arguments
+void execute_funcobject(struct ctx*, funcobject*, object * self ,int argc);
 extern const char *opcode_repres_ [];
 extern const struct obtype FUNCTYPE;
 #endif /* funcobject_h */

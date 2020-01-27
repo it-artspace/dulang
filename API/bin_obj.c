@@ -10,7 +10,7 @@
 #include "../INCLUDE/dulthread.h"
 #include "../INCLUDE/context.h"
 
-object* __bin_object(binarg Args){
+object* __bin_object(binarg Args, struct ctx*_){
     if(Args.a_passed == 0)
         return new_ob();
     if(Args.a_passed == 1 && strcmp(Args.aptr[0]->type->name, "functional object")==0){

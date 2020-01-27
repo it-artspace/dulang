@@ -24,7 +24,7 @@ char* dumpbool(object*self){
     return str;
 }
 
-object* boolfromlexem(char*src){
+object* boolfromlexem(char src){
     dulbool* newbool = (dulbool*)dulalloc(sizeof(dulbool));
     newbool->refcnt = 0;
     newbool->type = &BOOLTYPE;

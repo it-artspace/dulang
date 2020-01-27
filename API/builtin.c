@@ -45,7 +45,7 @@ const struct obtype BINTYPE = {
 
 
 
-object* __bin_obdump    (binarg Args){
+object* __bin_obdump    (binarg Args, struct ctx* _){
     for(int i =0; i<Args.a_passed; ++i){
         object* curarg = Args.aptr[i];
         if(curarg){
@@ -62,7 +62,7 @@ object* __bin_obdump    (binarg Args){
     return 0;
 }
 
-object* __bin_typeof    (binarg Args){
+object* __bin_typeof    (binarg Args, struct ctx*_){
     if(Args.a_passed > 1){
         object* res_arr [Args.a_passed];
         for(int i = Args.a_passed; i>0; --i){
@@ -81,7 +81,7 @@ object* __bin_typeof    (binarg Args){
 }
 
 
-object* __bin_range(binarg Args){
+object* __bin_range(binarg Args, struct ctx*_){
     switch(Args.a_passed){
         case 1:{
             object* o = Args.aptr[0];
@@ -175,7 +175,7 @@ object* __bin_range_(object*args, struct _crt * coro){
 
 
 
-object* __bin_str       (binarg Args){
+object* __bin_str       (binarg Args, struct ctx*_){
     if(Args.a_passed != 1){
         fprintf(stderr, "in function str 1 argument expected but %d passed", Args.a_passed);
         return 0;
@@ -191,11 +191,11 @@ object* __bin_str       (binarg Args){
 }
 
 
-object* __bin_time    (binarg Args){
+object* __bin_time    (binarg Args, struct ctx*_){
     return numfromdouble((double)clock()/CLOCKS_PER_SEC);
 }
 
-object* __bin_array     (binarg Args){
+object* __bin_array     (binarg Args, struct ctx*_){
     dularray * arr = malloc(sizeof(dularray));
     arr->refcnt = 0;
     arr->elem_count = 0;
@@ -217,4 +217,27 @@ object* __bin_array     (binarg Args){
         append((object*)arr, Args, 0);
     }
     return (object*)arr;
+}
+
+object* __bin_id (binarg Args, struct ctx*_){
+    if(Args.a_passed != 1){
+        ctx_trshoot(_, "arguments for function id should be 1");
+    }
+    object * o = *Args.aptr;
+    return numfromlong((long)o);
+}
+
+object* __bin_tojs      (binarg Args, struct ctx*_){
+    object * o = *Args.aptr;
+    if( o->type->type_id != func_id ){
+        if( o->type->type_id != method_id ){
+            ctx_trshoot(_, "argument in tojs must be a function");
+            return 0;
+        }
+        o = ((dulmethod*)o)->executable;
+    }
+    funcobject * to_transpile = (funcobject*)o;
+    jswriter * new_writer = init_writer("");
+    jswrite_node(new_writer, to_transpile->funcnode);
+    return strfromchar(new_writer->content);
 }

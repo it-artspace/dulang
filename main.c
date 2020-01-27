@@ -53,7 +53,7 @@ void* workloop(void*a){
     return 0;
 }
 
-int handle_segfault(int sig){
+void handle_segfault(int sig){
     void *callstack[128];
     int frames = backtrace(callstack, 128);
     char **strs= backtrace_symbols(callstack, frames);
@@ -67,7 +67,6 @@ int handle_segfault(int sig){
     free(strs);
     printf("caught %d", sig);
     exit(-1);
-    return 0;
 }
 
 int main(int argc, const char * argv[]) {

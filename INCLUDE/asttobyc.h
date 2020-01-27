@@ -73,7 +73,8 @@ enum opcodes {
     pack_module,
     push_object,
     store_iter,
-    load_stat_subscr
+    load_stat_subscr,
+    op_nequal
 };
 
 /*

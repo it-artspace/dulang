@@ -272,7 +272,7 @@ astnode*	parse_statement	( dulparser* parser )
 	
 	// Otherwise it is an expression
 	astnode*res = parse_expression(parser);
-    if(res&& (res->type != ASSIGN|| res->children[1]->type != FUNCDEF)){
+    if(res && (res->type != ASSIGN || res->children[1]->type != FUNCDEF)){
         lexem*next = extract_lexem(parser);
         if(next && (next->t != SPECIAL || next->sp != EOL)){
             parse_error_at(next, "unxpected token after expression");
@@ -295,6 +295,7 @@ astnode*	parse_compound		( dulparser* parser )
 	do{
 		astnode* stat = parse_statement(parser);
 		if(stat == NULL){
+            parse_error(parser, "error here");
 			return NULL;
 		}
 		astnode_add_child(res, stat);
@@ -554,68 +555,8 @@ astnode* parse_postfix(dulparser*parser){
                 }
                 break;
             case Obrace:{
-                extract_lexem(parser);
-                //extract EOL or check what is here
-                lexem*l_ = preview_lexem(parser);
-                astnode * args = 0;
-                astnode * argtuple = astnode_new(MKTUPLE, 5, 0);
-                do{
-                    if(l_->t == SPECIAL && l_->sp == arrow){
-                        extract_lexem(parser);
-                        l_= preview_lexem(parser);
-                        break;
-                    }
-                    if(l_->t == SPECIAL && l_->sp==EOL)
-                        goto funcbody;
-                    astnode * name = astnode_new(NAME, 0, 0);
-                    name->val = strdup(l_->literal);
-                    astnode_add_child(argtuple, name);
-                    extract_lexem(parser);
-                    l_ = preview_lexem(parser);
-                    if(l_->t == SPECIAL && l_->sp == comma){
-                        extract_lexem(parser);
-                        l_ = preview_lexem(parser);
-                        continue;
-                    }
-                } while(1);
-                if(argtuple->children_count == 1){
-                    args = argtuple->children[0];
-                } else {
-                    if(argtuple->children_count)
-                        args = argtuple;
-                }
-                
-                if(l_->t == SPECIAL && l_->sp == EOL){
-                    //here is compound
-                funcbody:;
-                    extract_lexem(parser);
-                    astnode* comp = parse_compound(parser);
-                    if(!comp){
-                        parse_error(parser, "error at inline func declaration");
-                        main = 0;
-                    }
-                    l_ = preview_lexem(parser);
-                    if(l_->t == SPECIAL && l_->sp == Cbrace){
-                        //okay
-                        extract_lexem(parser);
-                        if(!args)
-                            args = astnode_new(NULL_, 0, 0);
-                        astnode*nn = astnode_new(FUNCDEF, 2, 2, args, comp);
-                        nn->val = (void*)strdup("lambda");
-                        main = astnode_new(FUNCCALL, 2, 2, main, nn);
-                        bind_to_lexem(main, l_);
-                    } else {
-                        main = 0;
-                    }
-                } else {
-                    //here is one line expr
-                    astnode*expr = parse_statement(parser);
-                    extract_lexem(parser);
-                    astnode* exprnode = astnode_new(FUNCDEF, 2, 2,  astnode_new(NULL_, 0, 0) ,expr);
-                    exprnode->val = (void*)strdup("lambda");
-                    main = astnode_new(FUNCCALL, 2, 2, main, exprnode);
-                }
-                
+                astnode * fnode = parse_lambda(parser);
+                main = astnode_new(FUNCCALL, 2, 2, main, fnode);
             }break;
             default:
                 break;
@@ -668,6 +609,7 @@ astnode* parse_toplevel(dulparser*parser){
 			extract_lexem(parser);
 			return node;
         case SPECIAL:{
+            astnode*main;
             if(lex->sp == kwtrue || lex->sp == kwfalse){
                 node->type = BOOLLIT;
                 node->val = malloc(sizeof(char**));
@@ -680,66 +622,7 @@ astnode* parse_toplevel(dulparser*parser){
 				return parse_subexpr( parser, CRBracket );
 			}
             if(lex->sp == Obrace){
-                extract_lexem(parser);
-                lexem*l_ = preview_lexem(parser);
-                astnode * args = 0;
-                astnode * argtuple = astnode_new(MKTUPLE, 5, 0);
-                do{
-                    if(l_->t == SPECIAL && l_->sp == arrow){
-                        extract_lexem(parser);
-                        l_= preview_lexem(parser);
-                        break;
-                    }
-                    if(l_->t == SPECIAL && l_->sp==EOL)
-                        goto funcbody;
-                    astnode * name = astnode_new(NAME, 0, 0);
-                    name->val = strdup(l_->literal);
-                    astnode_add_child(argtuple, name);
-                    extract_lexem(parser);
-                    l_ = preview_lexem(parser);
-                    if(l_->t == SPECIAL && l_->sp == comma){
-                        extract_lexem(parser);
-                        l_ = preview_lexem(parser);
-                        continue;
-                    }
-                } while(1);
-                if(argtuple->children_count == 1){
-                    args = argtuple->children[0];
-                } else {
-                    if(argtuple->children_count)
-                        args = argtuple;
-                }
-                astnode * main;
-                if(l_->t == SPECIAL && l_->sp == EOL){
-                    //here is compound
-                funcbody:;
-                    
-                    extract_lexem(parser);
-                    astnode* comp = parse_compound(parser);
-                    if(!comp){
-                        parse_error(parser, "error at inline func declaration");
-                        main = 0;
-                    }
-                    l_ = preview_lexem(parser);
-                    if(l_->t == SPECIAL && l_->sp == Cbrace){
-                        //okay
-                        extract_lexem(parser);
-                        if(!args)
-                            args = astnode_new(NULL_, 0, 0);
-                        astnode*main = astnode_new(FUNCDEF, 2, 2, args, comp);
-                        main->val = (void*)strdup("lambda");
-                        bind_to_lexem(main, l_);
-                    } else {
-                        main = 0;
-                    }
-                } else {
-                    //here is one line expr
-                    astnode*expr = parse_statement(parser);
-                    extract_lexem(parser);
-                    main = astnode_new(FUNCDEF, 2, 2,  astnode_new(NULL_, 0, 0) ,expr);
-                    
-                }
-                return main;
+                return parse_lambda(parser);
             }
             return 0;
         }break;
@@ -761,21 +644,30 @@ astnode*	parse_lrvalue	( dulparser* parser )
         //remove f lexem
         extract_lexem(parser);
         //check if theres a name
+        astnode * assign = 0;
         astnode*funcnode = astnode_new(FUNCDEF, 2, 0);
         bind_to_lexem(funcnode, l);
-        lexem*l = preview_lexem(parser);
+        l = preview_lexem(parser);
 		if( l == NULL ) {
             parse_error_at(l, "expected either identifier or opening bracket ( at func decl but EOF found" );
             return NULL;
         }
-        if( l->t == IDENTIFIER ){
-            //hooray!
-            funcnode->val = strdup(l->literal);
-            extract_lexem(parser);
-        } else {
-            funcnode->val = strdup("lambda");
+        
+        
+    
+        funcnode->val = strdup("lambda");
+        if(l->t != SPECIAL || l->sp != ORBracket){
+            astnode * lval = parse_toplevel(parser);
+            l = preview_lexem(parser);
+            if(l->t == SPECIAL && l->sp == dot){
+                extract_lexem(parser);
+                astnode * r = parse_toplevel(parser);
+                r->type = STRLIT;
+                lval = astnode_new(SUBSCR, 2, 2, lval, r);
+            }
+            assign = astnode_new(ASSIGN, 2, 2, lval, funcnode);
         }
-		
+    
         l = extract_lexem(parser);
         if( l == NULL ) {
             parse_error_at(l, "expected ( at func decl but another token found");
@@ -811,7 +703,7 @@ astnode*	parse_lrvalue	( dulparser* parser )
         	return NULL;
         astnode_add_child(funcnode, p);
         astnode_add_child(funcnode, comp);
-        return funcnode;
+        return assign?assign:funcnode;
       
     }
     
@@ -842,12 +734,79 @@ astnode*	parse_lrvalue	( dulparser* parser )
 	return tuple;
 }
 
+astnode * parse_lambda (dulparser * parser){
+    extract_lexem(parser);
+    //extract EOL or check what is here
+    lexem*l_ = preview_lexem(parser);
+    astnode * args = 0;
+    astnode * argtuple = astnode_new(MKTUPLE, 5, 0);
+    do{
+        if(l_->t == SPECIAL && l_->sp == arrow){
+            extract_lexem(parser);
+            l_= preview_lexem(parser);
+            break;
+        }
+        if(l_->t == SPECIAL && l_->sp==EOL)
+            goto funcbody;
+        astnode * name = astnode_new(NAME, 0, 0);
+        name->val = strdup(l_->literal);
+        astnode_add_child(argtuple, name);
+        extract_lexem(parser);
+        l_ = preview_lexem(parser);
+        if(l_->t == SPECIAL && l_->sp == comma){
+            extract_lexem(parser);
+            l_ = preview_lexem(parser);
+            continue;
+        }
+    } while(1);
+    if(argtuple->children_count == 1){
+        args = argtuple->children[0];
+    } else {
+        if(argtuple->children_count)
+            args = argtuple;
+    }
+    
+    if(l_->t == SPECIAL && l_->sp == EOL){
+        //here is compound
+    funcbody:;
+        extract_lexem(parser);
+        astnode* comp = parse_compound(parser);
+        if(!comp){
+            parse_error(parser, "error at inline func declaration");
+            return 0;
+        }
+        l_ = preview_lexem(parser);
+        if(l_->t == SPECIAL && l_->sp == Cbrace){
+            //okay
+            extract_lexem(parser);
+            l_ = preview_lexem(parser);
+            if( l_->t == SPECIAL && l_->sp == EOL){
+                //extract_lexem(parser);
+            }
+            if(!args)
+                args = astnode_new(NULL_, 0, 0);
+            astnode*nn = astnode_new(FUNCDEF, 2, 2, args, comp);
+            nn->val = (void*)strdup("lambda");
+            return nn;
+        }
+        parse_error(parser, "no closing for lambda");
+        return 0;
+    } else {
+        //here is one line expr
+        astnode*expr = parse_statement(parser);
+        extract_lexem(parser);
+        astnode* exprnode = astnode_new(FUNCDEF, 2, 2,  astnode_new(NULL_, 0, 0) ,expr);
+        exprnode->val = (void*)strdup("lambda");
+        return exprnode;
+    }
+}
+
 astnode*	parse_expression	( dulparser* parser )
 {
 	astnode* left = parse_lrvalue( parser );
 
 	lexem*	  curr = preview_lexem( parser );
-	if( curr == NULL || ( curr->t == SPECIAL && curr->sp == EOL ))
+	if( curr == NULL || ( curr->t == SPECIAL && (curr->sp == EOL || curr->sp == dedent) ))
 	{
 		// No = sign
 		// It is just an expression
@@ -877,9 +836,9 @@ astnode*	parse_expression	( dulparser* parser )
 
 			case CRBracket:
 			case CSbracket:
+            case kwfunc:
             case Cbrace:
 				return left;
-				
 
  	 		default:
     			break;

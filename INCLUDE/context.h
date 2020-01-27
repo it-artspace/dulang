@@ -31,11 +31,10 @@ typedef struct ctx{
     int non_destroy;
 } context;
 
-context* init_context(const funcobject*, struct _crt*coro) __attribute__((weak_import));
+context* init_context(funcobject*, struct _crt*coro) __attribute__((weak_import));
 void     link_async(context*);
 //here we think that start and stop op are managed correctly
 void link_context(context*);
-int exec_context(context*);
 void eval_std (context*);
 void destroy_context(context*);
 #endif /* context_h */

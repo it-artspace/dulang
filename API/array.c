@@ -50,9 +50,23 @@ METHOD_DECL(append){
     return 0;
 }
 
+static bin_method arrmethods[2] = {{
+    &BINTYPE,
+    1,
+    &append
+},{
+    &BINTYPE,
+    1,
+    &length
+}};
 
 object * get_array_methods(){
-    
+    if (! arrm){
+        arrm = new_ob();
+        
+        ob_subscr_set(arrm, strfromchar("append"), arrmethods);
+        ob_subscr_set(arrm, strfromchar("length"), arrmethods + 1);
+    }
     
     return arrm;
 }

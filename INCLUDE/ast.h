@@ -80,7 +80,7 @@ astnode*	parse_compound		( dulparser* parser );
 astnode*	parse_statement		( dulparser* parser );
 astnode*	parse_expression	( dulparser* parser );
 astnode*	parse_lrvalue		( dulparser* parser );
-
+astnode*    parse_lambda        ( dulparser* parser );
 astnode*	parse_logical_or	( dulparser* parser );
 astnode*	parse_logical_and	( dulparser* parser );
 astnode*    parse_in            ( dulparser* parser );

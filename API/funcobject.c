@@ -53,7 +53,8 @@ const char *opcode_repres_ [] =  {
     "pack_mod",
     "push_object",
     "store_iter",
-    "load_stat_prop"
+    "load_stat_prop",
+    "op_neq"
 };
 
 void destroy_func(object*f){
@@ -129,3 +130,20 @@ char* dumpfunc(object*fobj){
     return global_dump;
 }
 
+void execute_funcobject(struct ctx* ctx, funcobject* fo, object * self, int argc){
+    context * new_context = init_context(fo, ctx->coroutine);
+    new_context->this_ptr = self;
+    for(int i = 0; i < fo->namecount; ++i){
+        if(strcmp("this", fo->varnames[i]) == 0){
+            INCREF(self);
+            new_context->vars[i] = self;
+        }
+    }
+    if(argc != fo->argcount){
+        ctx_trshoot(ctx, "in function passed wrong number of params");
+    }
+    for(int i = 0; i < fo->argcount; ++i){
+        new_context->vars[i] = *--ctx->stackptr;
+        INCREF(new_context->vars[i]);
+    }
+}

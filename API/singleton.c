@@ -67,7 +67,7 @@ object* ob_subscr_get   (const object*self, object * s_name){
     single_ob*t = (single_ob*)self;
     int pos = dulshape_get_offset(t->shape, s_name);
     object * result = pos>=0?t->f_values[pos]:0;
-    printf("pos = %d, result = %p", pos, result);
+    //printf("pos = %d, result = %p", pos, result);
     
     return result;
 }
@@ -246,4 +246,18 @@ char ob_contains_field  (const object*self, const object*other){
     }
     dulstring* str = (dulstring*)other;
     return ob_subscr_get(self, str) != 0;
+}
+/**
+ retuns a copy of object
+ */
+///<name = "src">object that is typesafe</name>
+object * copy_object (object * src){
+    object * o = new_ob();
+    single_ob * self = (single_ob*)src;
+    for(int i = 0; i< self->shape->cap; ++i){
+        if(self->shape->fieldnames[i]){
+            ob_subscr_set(o, self->shape->fieldnames[i], self->f_values[i]);
+        }
+    }
+    return o;
 }

@@ -23,7 +23,7 @@ METHOD_DECL(str_slice){
     dulstring * slicer = (dulstring*)*Args.aptr;
     binarg _Args;
     _Args.a_passed = 0;
-    object * arr = __bin_array(_Args);
+    object * arr = __bin_array(_Args, ctx);
     char * slicee = sliceable->content;
     while(slicee<=sliceable->content + sliceable->len){
         char * end_of_slice = strstr(slicee, slicer->content);
@@ -51,6 +51,30 @@ METHOD_DECL(str_slice){
 }
 
 
+METHOD_DECL(strsubstr){
+    if( Args.a_passed != 2 ){
+        ctx_trshoot(ctx, "in str substr method 2 args required");
+        return 0;
+    }
+    object * begin = Args.aptr[0];
+    object * end = Args.aptr[1];
+    if( begin->type->type_id != number_id || end->type->type_id != number_id ){
+        ctx_trshoot(ctx, "in str subscr method args must be numbers");
+        return 0;
+    }
+    dulnumber * start = (dulnumber*)begin;
+    dulnumber * endpos = (dulnumber*)end;
+    if( !(start->n_type && endpos->n_type) ){
+        ctx_trshoot(ctx, "in str substr method args must be integers");
+        return 0;
+    }
+    if( endpos->i_val > ((dulstring*)self)->len ){
+        ctx_trshoot(ctx, "slice size must not exceed the length of string");
+        return 0;
+    }
+    return strfromnchar(((dulstring*)self)->content + start->i_val, (int)(endpos->i_val - start->i_val));
+}
+
 METHOD_DECL(strformat){
     dulstring * template = (dulstring*)self;
     bundle * args = (bundle*)_mktuple(Args.aptr + Args.a_passed, Args.a_passed);
@@ -67,7 +91,8 @@ METHOD_DECL(strformat){
             ((dulnumber*)num_idx)->val = i;
             object * o = tuple_sub_get((object*)args, num_idx);
             if(o->type->type_id == string_id){
-                wr+= sprintf(wr, "%*s", ((dulstring*)o)->len, ((dulstring*)o)->content);
+                strncpy(wr, ((dulstring*)o)->content, ((dulstring*)o)->len);
+                wr += ((dulstring*)o)->len;
                 continue;
             }
             if(o->type->type_id == func_id){
@@ -111,11 +136,17 @@ static struct {
         &BINTYPE,
         1,
         str_slice
+    }},
+    {
+    "substr",{
+        &BINTYPE,
+        1,
+        strsubstr
     }
     }
     
 };
-static int str_methods_count = 3;
+static int str_methods_count = sizeof(string_methods)/sizeof(*string_methods);
 
 object* get_str_methods(void){
     static object * methods;
@@ -147,18 +178,22 @@ char eq_str(object*left, object*right){
     }
 }
 
+char neq_str(object*left, object*right){
+    return !eq_str(left, right);
+}
+
 object* str_subscr_get(object* s, object * i){
     //s is guaranteed to be string
     dulstring* self = (dulstring*)s;
     if(i->type->type_id != number_id)
         return 0;
     dulnumber*pos = (dulnumber*)i;
-    if(pos->val<0)
-        pos->val+= self->len;
-    if(pos->val < 0 || pos->val > self->len){
+    if(pos->i_val<0)
+        pos->i_val+= self->len;
+    if(pos->i_val < 0 || pos->i_val > self->len){
         return 0;
     }
-    char* newsrc = strndup(self->content+(int)pos->val, 1);
+    char* newsrc = strndup(self->content+(int)pos->i_val, 1);
     dulstring* newstr = (dulstring*)strfromchar(newsrc);
     free(newsrc);
     return (object*)newstr;
@@ -267,6 +302,7 @@ object * str_iadd(object * left, object * right){
     }
     if(l->cap < l->len + r->len){
         while(l->cap < l->len + r->len){
+            l->cap++;
             l->cap <<= 1;
         }
         l->content = realloc(l->content, l->cap);
@@ -293,7 +329,7 @@ const struct obtype STRTYPE = {
     0, // /=
     0, // <
     0, // >
-    &eq_str, // ==
+    &eq_str, //==
     0, // <=
     0, // >=
     0, // f()

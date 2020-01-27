@@ -1,3 +1,59 @@
+common_styles = object{
+    .linear = object{
+        ."display" = "flex"
+        ."flex" = "1 0 auto"
+        ."flex-direction" = "row"
+    }
+    .vertical = object{
+        ."display" = "flex"
+        ."flex" = "1 0 auto"
+        ."flex-direction" = "column"
+    }
+}
+
+fun node()
+    return object(view){
+        .tag = "div"
+        .children = array()
+        .style = object()
+        .attrs = object()
+        .hooks = object()
+    }
+
+view = object{
+    fun this.on( event )
+        _ = this
+        return { handler->
+            _.hooks[event] = handler
+        }
+    fun this.attr(k, v)
+        @attrs[k] = v
+    fun this.view ( init_func )
+        templ = node()
+        @children.append(templ(init_func))
+        return templ
+    fun this.render()
+        style_repr = "\""
+        for prop in .style
+            style_repr += "$0:$1;".format(prop, this.style[prop])
+        style_repr += "\""
+        children_repr = ""
+        if .text
+            children_repr += .text
+        for child in .children
+            children_repr += child.render()
+        attr_repr = ""
+        hook_head = ""
+        hook_repr = "<script>"
+        for event in .hooks
+            hook_head += " on$0=\"$0$1()\"".format(event, id(this))
+            hook_repr += "let $0$1 = $2\n".format(event, id(this), toJS(@hooks[event]))
+        hook_repr += "</script>"
+        write hook_repr
+        for attr in .attrs
+            attr_repr += "$0='$1'".format(attr, @attrs[attr])
+        return "<$0 id=\"$4\" $5 $3 style=$1>$6 $2</$0>".format(@tag, style_repr, children_repr, attr_repr, id(this), hook_head, hook_repr)
+}
 
 
 
@@ -5,35 +61,75 @@ fun createNode(tag)
     return object{
         @tag = tag
         @children = array()
-        @style = object()
-        .div = fun(init_func)
-            new_elem = object(this)(init_func)
-            new_elem.children = array()
-            new_elem.tag = "div"
-            @children.append(new_elem)
-        @render = fun()
-            str_acc = "<$0 style='".format(@tag)
+        @style = object{
+            .padding = "0.5rem"
+        }
+        .attrs = object()
+        .handlers = object()
+        fun this.view (init_func)
+            new_elem = createNode("div")
+            new_elem(init_func)
+            this.children.append(new_elem)
+            return new_elem
+        fun this.render ()
+            str_acc = "<$0 style=\"".format(@tag)
             for prop in @style
                 str_acc += "$0:$1;".format(prop, @style[prop])
-            str_acc += "'>"
+            str_acc += "\">"
             if @text
                 str_acc += @text
             for i in @children
                 str_acc += i.render()
             str_acc += "</$0>".format(@tag)
             return str_acc
+        fun this.prepare()
+            node = this
+            return object{
+                .render = fun()
+                    return .repr
+                .repr = node.render()
+            }
+        fun this.on (event)
+            node = this
+            return fun (handler)
+                node.handlers[ event ] = handler
+            
+        fun @button (text)
+            new_elem = createNode("div")
+            new_elem{
+                .style = object{
+                    ."border-radius" = "0.5rem"
+                    ."color" = "white"
+                    ."background" = "#333333"
+                    ."font-size" = "1.25rem"
+                    ."padding" = "1rem"
+                    ."align-self" = "center"
+                    .display = "flex"
+                    ."justify-content" = "center"
+                }
+                .text = text
+            }
+            @children.append(new_elem)
+            return new_elem
     }
 
-fun Document()
-    obj = createNode("html")
-    node = createNode("head")
-    obj.head = node
-    obj.children.append(node)
-    body = createNode("body")
-    obj.children.append(body)
-    obj.body = body
-    return obj
 
+fun linkCSS(resource)
+    return object{
+        fun this.render()
+            return "<link rel='stylesheet' href='$0'>".format(resource)
+    }
 
-
+fun document(init_func)
+    htmlDoc = node()
+    head = node()
+    htmlDoc.tag = "html"
+    htmlDoc{
+        .style["font-family"] = "Roboto, 'sans-serif'"
+        body = .view{
+            .tag ="body"
+        }
+        .view = body.view
+    }
+    return htmlDoc(init_func)
 

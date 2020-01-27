@@ -63,5 +63,9 @@ object* init_obj_iter     (const object*);
 object* obj_iter_next     (object*);
 object* unpack_obj_iter   (const object*);
 
+/// returns a flat copy
+/// @param src needs to be typechecked
+object * copy_object (object * src);
+
 
 #endif /* singleton_h */

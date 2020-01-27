@@ -53,6 +53,13 @@ builtin_func chan_ = {
     &Dulnew_channel
 };
 
+builtin_func id_ = {
+    &BINTYPE,
+    1,
+    "id",
+    &__bin_id
+};
+
 builtin_func time_ = {
     &BINTYPE,
     1,
@@ -65,8 +72,14 @@ builtin_func array = {
     "array",
     &__bin_array
 };
+builtin_func tojs = {
+    &BINTYPE,
+    1,
+    "toJS",
+    &__bin_tojs
+};
 
-builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_, &time_, &array};
+builtin_func *bins[] = {&dump, &typeof_, &range, &obj, &str_, &chan_, &time_, &array, &id_, &tojs};
 const int bin_count = sizeof(bins)/sizeof(object*);
 
 void eval_std (context*ctx){

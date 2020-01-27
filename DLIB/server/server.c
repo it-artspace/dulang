@@ -24,7 +24,9 @@
 BIN_DECL(finalize);
 BIN_DECL(set_stat);
 
-
+void DilAPI_init(){
+    init_shapes();
+}
 
 static int sockfd;
 static const char * okhdr = "HTTP/1.1 200 OK\r\nContent-length:";
@@ -117,6 +119,9 @@ BIN_DECL(listen){
     return 0;
 }
 
+static void DulAPI_init(void){
+    init_shapes();
+}
 
 typedef struct {
     ObHead
@@ -189,7 +194,7 @@ BIN_DECL(accept){
         //firstly read the headers
     int bread = 0;
     while(strstr(rdbuf, "\r\n\r\n")==0){
-        int read = recv(clfd, rdbuf+bread, 4096, MSG_WAITALL);
+        int read = recv(clfd, rdbuf+bread, 4096, 0);
         if( read < 0 )
             return 0;
         bread += read;

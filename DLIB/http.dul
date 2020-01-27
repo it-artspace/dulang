@@ -7,9 +7,9 @@ app = object{
             accept = server.Dulaccept()
             if accept
                 conn, path, params = accept
-                write .router
                 handler = .router[path]
                 if handler
+                    write res
                     res = handler(params)
                 else
                     res = "404 error for path $0".format(path)

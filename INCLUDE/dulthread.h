@@ -60,6 +60,6 @@ void thread_error(char * errmsgfmt, ...);
 void ctx_trshoot(context*, char * errmsg) __attribute__((weak_import));
 #pragma weak init_context
 #pragma weak current_thread
-context* init_context(const funcobject*, struct _crt*coro) __attribute__((weak));
+context* init_context(funcobject*, struct _crt*coro) __attribute__((weak));
 
 #endif /* dulthread_h */

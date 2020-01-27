@@ -1,0 +1,26 @@
+#returns a string that represents the code
+
+fun literal(value)
+    return "<span class='literal'>$0</span>".format(value)
+
+fun parseCode(code)
+    result = ""
+    i = 0
+    while( i < code.length() )
+        write code[i]
+        if code[i] == " "
+            result += " "
+        if code[i] == "\\"
+            i += 1
+            if code[i] == "t"
+                result += "\t"
+            if code[i] == "n"
+                result += "<br>"
+        if code[i] == "\""
+            strcounter = i + 1
+            while ( code[strcounter] != "\"" )
+                strcounter += 1
+            result += literal(code.substr(i, strcounter))
+            i = strcounter
+        i += 1
+    return result

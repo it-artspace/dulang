@@ -70,6 +70,7 @@ funcobject* init_func(const funcobject* parent){
     new_func->outer_context = NULL;
     new_func->refcnt = 1;
     new_func->namecount = 0;
+    new_func->r_ctx_stackpos = new_func->reused_ctx;
     return new_func;
 }
 funcobject* load_file(const char* fname){
@@ -82,6 +83,7 @@ funcobject* load_file(const char* fname){
     astnode_print(root);
 #endif
     funcobject* module = init_func(0);
+    module->funcnode = root;
     module->filepos.fname = strdup(fname);
     module->filepos.lineno = 0;
     module->filepos.linepos = 0;
@@ -92,7 +94,7 @@ funcobject* load_file(const char* fname){
             write_node(module, root->children[i]);
     }
     write_op(module, pack_module, 0);
-    astnode_delete(root);
+    //astnode_delete(root);
     return module;
 }
 
@@ -136,6 +138,7 @@ void load_func_process_storenames( astnode* current, funcobject* currfunc, funco
 
 struct op * load_func(funcobject* writer, astnode*funroot){
     funcobject* new_writer = init_func(writer);
+    new_writer->funcnode = funroot;
     extract_names(new_writer, funroot->children[0]);
     new_writer->argcount = new_writer->namecount;
 
@@ -528,6 +531,11 @@ struct op *  write_node(funcobject* writer, astnode*node){
             write_node(writer, node->children[0]);
             write_node(writer, node->children[1]);
             write_op(writer, op_eq, 0);
+        }break;
+        case NEQUAL:{
+            write_node(writer, node->children[0]);
+            write_node(writer, node->children[1]);
+            write_op(writer, op_nequal, 0);
         }break;
         case INOP:{
             write_node(writer, node->children[0]);

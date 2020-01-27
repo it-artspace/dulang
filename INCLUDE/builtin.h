@@ -30,13 +30,15 @@ typedef struct {
     method_ptr func_pointer;
 } bin_method;
 
-object* __bin_obdump    (binarg Args);
-object* __bin_range     (binarg Args);
-object* __bin_typeof    (binarg Args);
-object* __bin_object    (binarg Args);
-object* __bin_str       (binarg Args);
-object* __bin_array     (binarg Args);
-object* __bin_time      (binarg Args);
+object* __bin_obdump    (binarg Args, struct ctx*);
+object* __bin_range     (binarg Args, struct ctx*);
+object* __bin_typeof    (binarg Args, struct ctx*);
+object* __bin_object    (binarg Args, struct ctx*);
+object* __bin_str       (binarg Args, struct ctx*);
+object* __bin_array     (binarg Args, struct ctx*);
+object* __bin_time      (binarg Args, struct ctx*);
+object* __bin_id        (binarg Args, struct ctx*);
+object* __bin_tojs      (binarg Args, struct ctx*);
 extern const struct obtype BINTYPE;
 extern const struct obtype BINMTYPE;
 #endif /* builtin_h */

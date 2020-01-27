@@ -23,30 +23,7 @@ void destroy_coro(struct _crt*c){
     //free(c);
 }
 
-int exec_coro(struct _crt*coroutine){
-    switch(coroutine->state){
-        case coro_running:{
-            context* c = coroutine->sttop;
-            if(exec_context(c)){
-                //context is finished
-                context* next = c->return_to;
-                //destroy_context(c);
-                if(next)
-                    coroutine->sttop = next;
-                else {
-                    return coroutine->state = coro_finished;
-                }
-            }
-            return coro_running;
-        } break;
-        case coro_finished:{
-            return coro_finished;
-        } break;
-        default:
-            return coroutine->state;
-            break;
-    }
-}
+
 
 struct _crt * start_coro( struct thread* thr, funcobject* func ) {
     struct _crt * coro = (struct _crt *) dulalloc( sizeof( struct _crt));
@@ -94,32 +71,6 @@ void ctx_trshoot(context*problematic, char * errmsg){
 }
 
 
-int exec_thread(void){
-    struct _crt* coro = current_thread->current;
-    if(!(coro->state == coro_waiting)){
-        if(exec_coro(coro) == coro_finished){
-            switch (current_thread->workload) {
-                case 0:
-                    return 0;
-                case 1:
-                    destroy_coro(current_thread->current);
-                    return current_thread->workload = 0;
-                default:{
-                    struct _crt* prev = coro->prev;
-                    struct _crt* next = coro->next;
-                    prev->next = next;
-                    next->prev = prev;
-                    destroy_coro(coro);
-                    current_thread->current = coro->next;
-                    return --current_thread->workload;
-                }break;
-            }
-        }
-    }
-    
-    current_thread->current = coro->next;
-    return current_thread->workload;
-}
 
 
 void thread_error(char * errmsgfmt, ...){
@@ -149,7 +100,7 @@ get_coro:;
     int codes_block = 0;
     while(!t->workload){
         if(final_context)
-            pthread_exit(0);
+            return;
         pthread_cond_wait(&t->empty, &t->mutex);
     }
     const int _lock_null = 0;
@@ -320,7 +271,7 @@ ctx_exec:;
                         fprintf(stderr, "in function %d parameter passed but %d expected\n",
                             _op->arg, ((funcobject*)sttop)->argcount);
                     }
-                    for(int i = ((funcobject*)sttop)->argcount - 1; i>=0; --i){
+                    for(int i = ((funcobject*)sttop)->argcount - 1; i >= 0; --i){
                         c->vars[i] = *--ctx->stackptr;
                         INCREF(c->vars[i]);
                     }
@@ -357,26 +308,11 @@ ctx_exec:;
                     
                     funcobject* r_func_arg = (funcobject*)args;
                     //dumpfunc(r_func_arg);
-                    context* c = init_context(r_func_arg, ctx->coroutine);
-                    
-                    int this_pos = -1;
-                    for(int i = 0; i<r_func_arg->namecount; ++i){
-                        if(strcmp("this", r_func_arg->varnames[i]) == 0){
-                            this_pos = i;
-                            break;
-                        }
-                    }
-                    
-                    if(this_pos != -1){
-                        c->vars[this_pos] = (object*)sttop;
-                        c->this_ptr      = sttop;
-                        
-                    }
+                    execute_funcobject(ctx, r_func_arg, receiver, 0);
                 }
             } break;
             case dulreturn:
                 if(ctx->return_to){
-    
                     object* return_result = *--ctx->stackptr;
                     if(return_result) INCREF(return_result);
                     *(ctx->return_to->stackptr)++ = return_result;
@@ -492,6 +428,24 @@ ctx_exec:;
                             *ctx->stackptr++ = ((builtin_func*)method_ob)->func_pointer(a, ctx);
                             break;
                         }
+                        if(method_ob->type->type_id == object_id){
+                            switch (_op->arg) {
+                                case 0:
+                                    *ctx->stackptr++ = copy_object(method_ob);
+                                    break;
+                                case 1:{
+                                    object * arg = *--ctx->stackptr;
+                                    if(arg->type->type_id != func_id){
+                                        ctx_trshoot(ctx, "cannot invoke non function typed object");
+                                        break;
+                                    }
+                                    funcobject * arg_fo = (funcobject*)arg;
+                                    execute_funcobject(ctx, arg_fo, method_ob, 0);
+                                }break;
+                                default:
+                                    break;
+                            }
+                        }
                         if(method_ob->type->type_id == method_id){
                             method_ob = ((dulmethod*)method_ob)->executable;
                         }
@@ -499,9 +453,10 @@ ctx_exec:;
                             context* c = init_context((funcobject*)method_ob, ctx->coroutine );
                             if(_op->arg != ((funcobject*)method_ob)->argcount){
                                 fprintf(stderr, "cannot invoke method of not string type: %s\n", method_name->type->name);
+                                fprintf(stderr, "error in opcode %ld\n", ctx->inst_pointer - ctx->co_static->byteops);
                                 break;
                             }
-                            for(int i = 0; i<((funcobject*)method_ob)->argcount; ++i){
+                            for(int i = ((funcobject*)method_ob)->argcount - 1; i>=0; --i){
                                 c->vars[i] = *--ctx->stackptr;
                                 INCREF(c->vars[i]);
                             }
@@ -532,16 +487,7 @@ ctx_exec:;
                     else{
                         if(method_ob->type->type_id == method_id)
                             method_ob = ((dulmethod*)method_ob)->executable;
-                        context * c = init_context(method_ob, ctx->coroutine);
-                        for(int i = 0; i<((funcobject*)method_ob)->argcount; ++i)
-                            c->vars[i] = a.aptr[i];
-                        for(int i = 0; i<((funcobject*)method_ob)->namecount; ++i){
-                            if(strcmp("this", ((funcobject*)method_ob)->varnames[i]) == 0){
-                                c->vars[i] = self;
-                                c->this_ptr = self;
-                                break;
-                            }
-                        }
+                        execute_funcobject(ctx, method_ob, self, _op->arg);
                     }
                 }
                 
@@ -601,6 +547,7 @@ ctx_exec:;
                 char result = left->type->lt(left, right);
                 *ctx->stackptr++ = boolfromlexem(result);
             }break;
+            case op_nequal:
             case op_eq:{
                 object* right = *--ctx->stackptr;
                 object* left = *--ctx->stackptr;
@@ -609,6 +556,8 @@ ctx_exec:;
                     break;
                 }
                 char result = left->type->eq(left, right);
+                if(_op->op_code == op_nequal)
+                    result = !result;
                 *ctx->stackptr++ = boolfromlexem(result);
             } break;
             case op_contains:{

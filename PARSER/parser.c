@@ -263,8 +263,14 @@ enum lexemtype getlexem(dulparser*p){
             p->strpos++;
         int size = p->strpos-strstart-2;
 		clexem->literal = (char*)dulalloc( size + 1);
-		strncpy(clexem->literal, p->curstring + strstart+1, p->strpos-strstart-2);
-        ((char*)clexem->literal)[size] = '\0';
+        char * strbegin = p->curstring + strstart+1;
+        char * wr = clexem->literal;
+        for(char * rdr = strbegin; rdr < strbegin + p->strpos-strstart-2; ++rdr){
+            if(*rdr != '\\')
+                *wr ++ = *rdr;
+        }
+        
+        ((char*)clexem->literal)[wr - clexem->literal] = '\0';
 		clexem->t = STRLNGLITERAL;
 		p->lexemcount++;
         
