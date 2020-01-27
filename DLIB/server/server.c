@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <math.h>
+#include <string.h>
 
 
 BIN_DECL(finalize);
@@ -197,7 +198,7 @@ BIN_DECL(accept){
         //firstly read the headers
     int bread = 0;
     int read = 1;
-    while(read){
+    while(read && !strstr(rdbuf, "\r\n\r\n")){
         read = recv(clfd, rdbuf+bread, 1, MSG_WAITALL);
         if( read < 0 )
             return 0;
