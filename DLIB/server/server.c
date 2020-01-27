@@ -198,7 +198,7 @@ BIN_DECL(accept){
     int bread = 0;
     int read = 1;
     while(/*(strstr(rdbuf, "\r\n\r\n")==0*/ read){
-        read = recv(clfd, rdbuf+bread, 4096, 0);
+        read = recv(clfd, rdbuf+bread, 1, MSG_WAITALL);
         if( read < 0 )
             return 0;
         bread += read;
