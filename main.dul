@@ -1,21 +1,2 @@
-import "http.dul"
-import "html.dul"
-app = http.app
-app.route("/"){ r->
-    return html.document{
-        .view{
-            .text = "sometext"
-            .style = object{
-                ."text-align"="center"
-                ."font-size"="2rem"
-            }
-        }
-        .view{
-            .text = "Нажми меня"
-            .on("click")({
-                alert("меня нажали!")
-            })
-        }
-    }.render()
-}
-app.launch(80)
+import "ipc/ipc.ffi"
+write ipc.Dulconnect("localhost:8888").wait()

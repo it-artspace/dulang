@@ -206,3 +206,18 @@ void jswrite_node   (jswriter*w, astnode*node){
     }
     
 }
+
+object* __bin_tojs      (binarg Args, struct ctx*_){
+    object * o = *Args.aptr;
+    if( o->type->type_id != func_id ){
+        if( o->type->type_id != method_id ){
+            ctx_trshoot(_, "argument in tojs must be a function");
+            return 0;
+        }
+        o = ((dulmethod*)o)->executable;
+    }
+    funcobject * to_transpile = (funcobject*)o;
+    jswriter * new_writer = init_writer("");
+    jswrite_node(new_writer, to_transpile->funcnode);
+    return strfromchar(new_writer->content);
+}

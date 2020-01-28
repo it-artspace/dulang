@@ -53,23 +53,23 @@ METHOD_DECL(str_slice){
 
 METHOD_DECL(strsubstr){
     if( Args.a_passed != 2 ){
-        ctx_trshoot(ctx, "in str substr method 2 args required");
+        //ctx_trshoot(ctx, "in str substr method 2 args required");
         return 0;
     }
     object * begin = Args.aptr[0];
     object * end = Args.aptr[1];
     if( begin->type->type_id != number_id || end->type->type_id != number_id ){
-        ctx_trshoot(ctx, "in str subscr method args must be numbers");
+        //ctx_trshoot(ctx, "in str subscr method args must be numbers");
         return 0;
     }
     dulnumber * start = (dulnumber*)begin;
     dulnumber * endpos = (dulnumber*)end;
     if( !(start->n_type && endpos->n_type) ){
-        ctx_trshoot(ctx, "in str substr method args must be integers");
+        //ctx_trshoot(ctx, "in str substr method args must be integers");
         return 0;
     }
     if( endpos->i_val > ((dulstring*)self)->len ){
-        ctx_trshoot(ctx, "slice size must not exceed the length of string");
+        //cctx_trshoot(ctx, "slice size must not exceed the length of string");
         return 0;
     }
     return strfromnchar(((dulstring*)self)->content + start->i_val, (int)(endpos->i_val - start->i_val));
