@@ -129,7 +129,8 @@ object* import_module(char*fname){
         ob_subscr_set((object*)obj, strfromchar(rdbuf), (object*)to_enplace);
     }
     void (*initializer)(void) = dlsym(lib, "DulAPI_init_");
-    initializer();
+    if(initializer)
+        initializer();
     ob_subscr_set(mods, strfromchar(modname), (object*)obj);
     fclose(f);
     return (object*)obj;
@@ -152,9 +153,9 @@ void launch_file(char*fname){
     char namebuf [100];
     sprintf(namebuf, "%s.js",fname);
     funcobject*f = load_file(fname);
-    jswriter * writer = init_writer(namebuf);
+    /*jswriter * writer = init_writer(namebuf);
     jswrite_node(writer, f->funcnode);
-    jswrite_tofile(writer, namebuf);
+    jswrite_tofile(writer, namebuf);*/
 #if print_bytecode
     char* dump = dumpfunc(f);
     fprintf(output, "%s", dump);

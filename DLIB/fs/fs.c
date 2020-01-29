@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
 
 BIN_DECL(read);
 BIN_DECL(write);
@@ -75,7 +76,7 @@ object * read_dirNode(const char * path){
     lstat(path, &bufstat);
     ob_subscr_set(node_object, strfromchar("isDir"), boolfromlexem((char*)S_ISDIR(bufstat.st_mode)));
     binarg Args = {0, 0};
-    object * arr = __bin_array(Args);
+    object * arr = __bin_array(Args, 0);
     //set for all case for monomorphism
     ob_subscr_set(node_object, strfromchar("children"), arr);
     if(S_ISDIR(bufstat.st_mode)){
@@ -103,12 +104,23 @@ BIN_DECL(dirTree){
 }
 
 BIN_DECL(write){
-    if((*Args.aptr)->type->type_id != string_id){
+    if((*Args.aptr)->type->type_id != string_id || Args.a_passed != 2){
         fprintf(stderr, "parameter of type string expected in fs.write");
         return 0;
     }
     dulstring * fname = (dulstring*)*Args.aptr;
-    int fd = open(fname->content, O_WRONLY);
+    FILE * f = fopen(fname->content, "w");
+    int fd = fileno(f);
+     printf("%s:%d", fname->content, errno);
+    if(fd == -1)
+        return 0;
+   
+    dulstring * content = (dulstring*)Args.aptr[1];
+    char * wr = content->content;
+    while(wr < content->content + content->len){
+        wr += write(fd, wr, content->content + content->len - wr);
+    }
+    close(fd);
     return 0;
 }
 
@@ -119,4 +131,8 @@ BIN_DECL(system){
     }
     dulstring * arg = *Args.aptr;
     return 0;
+}
+
+void DulAPI_init_(void){
+    init_shapes();
 }

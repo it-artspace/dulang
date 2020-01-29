@@ -1,2 +1,12 @@
 import "ipc/ipc.ffi"
-write ipc.Dulconnect("localhost:8888").wait()
+import "html.dul"
+uds = ipc.DulstartUDS("")
+while true
+    chan = uds.connect()
+    uid = chan.wait(1)
+    write uid
+    ans = html.node(){
+        .text = uid
+    }
+    write ans
+    chan.push( ans.render() )

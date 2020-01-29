@@ -8,6 +8,8 @@
 
 #include "api.h"
 #include <assert.h>
+#include <stdio.h>
+#include <ctype.h>
 /*
  algoritm: split into symbols, then iterating over them bring the object that lies in root
  */
@@ -27,11 +29,33 @@ struct jsontoken{
     object * val;
 };
 
+static char * typerepr[] = {
+    "jsboollit",
+    "jsstrlit",
+    "jsnumlit",
+    "jscolon",
+    "jscomma",
+    "jsosbr",
+    "jscsbr",
+    "jsobrace",
+    "jscbrace"
+};
+
+void print_repr(struct jsontoken tok){
+    printf("{%s: %s}\n", typerepr[tok.type], tok.val?tok.val->type->dump(tok.val):"NULL");
+}
+
+
 struct json_parser_array{
     struct jsontoken * tokens;
     int token_c;
     int token_cap;
 };
+
+
+void DulAPI_init_(void){
+    init_shapes();
+}
 
 #define JS_TOK_ARR_SETUP { malloc(sizeof(struct jsontoken) * 15),0, 15}
 
@@ -45,9 +69,11 @@ void add_token(struct json_parser_array *arr, struct jsontoken *tok){
 #define is_numeric(sym) (isdigit(sym) || sym=='.')
 
 struct json_parser_array str_to_tokens(dulstring * s){
+    s->content[s->len] = 0;
+    //printf("string is:%s\n", dumpstr(s));
     struct json_parser_array arr = JS_TOK_ARR_SETUP;
 #warning TODO:flatten the string
-    for(char * str_iter = s->content; str_iter != s->content + s->len; ++str_iter){
+    for(char * str_iter = s->content; str_iter < s->content + s->len;){
         //treat start as the real beginning, otherwise moving the ptr
         //the string literal cannot appear here - its already captured
         while(*str_iter == ' ')
@@ -65,6 +91,7 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 jsstrlit,
                 strfromnchar(str_begin, str_iter - str_begin)
             };
+            str_iter++;
             add_token(&arr, &tok);
             continue;
         }
@@ -74,6 +101,7 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 0
             };
             add_token(&arr, &tok);
+            str_iter++;
             continue;
         }
         if(*str_iter ==':'){
@@ -82,6 +110,7 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 0
             };
             add_token(&arr, &tok);
+            str_iter++;
             continue;
         }
         if(*str_iter =='['){
@@ -90,6 +119,7 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 0
             };
             add_token(&arr, &tok);
+            str_iter++;
             continue;
         }
         if(*str_iter ==']'){
@@ -98,6 +128,7 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 0
             };
             add_token(&arr, &tok);
+            str_iter++;
             continue;
         }
         if(*str_iter =='{'){
@@ -106,6 +137,7 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 0
             };
             add_token(&arr, &tok);
+            str_iter++;
             continue;
         }
         if(*str_iter =='}'){
@@ -114,19 +146,23 @@ struct json_parser_array str_to_tokens(dulstring * s){
                 0
             };
             add_token(&arr, &tok);
+            str_iter++;
             continue;
+        }
+        if(*str_iter==0 || *str_iter == '\n'){
+            break;
         }
         if(strncmp("true", str_iter, 4)==0){
             struct jsontoken tok = {
                 jsboollit,
                 boolfromlexem(1)
             };
-            str_iter += 3;
+            str_iter += 4;
             add_token(&arr, &tok);
             continue;
         }
         if(strncmp("false", str_iter, 5)==0){
-            str_iter += 4;
+            str_iter += 5;
             struct jsontoken tok = {
                 jsboollit,
                 boolfromlexem(0)
@@ -137,14 +173,23 @@ struct json_parser_array str_to_tokens(dulstring * s){
         //otherwise it is a number
         double d;
         char * number_ending;
-        d = strtod(str_iter, &number_ending);
-        str_iter = number_ending;
+        char buf [200];
+        char * wr = buf;
+        while(isdigit(*str_iter) || *str_iter == '-' || *str_iter == '.'){
+            *wr++ = *str_iter++;
+        }
+        sscanf(buf, "%lf", &d);
+        //str_iter = number_ending;
+        //printf("ended here: %s\n", number_ending);
         struct jsontoken tok = {
             jsnumlit,
             numfromdouble(d)
         };
         add_token(&arr, &tok);
     }
+    /*for(int i = 0; i < arr.token_c; ++i){
+        print_repr(arr.tokens[i]);
+    }*/
     return arr;
 }
 
@@ -184,7 +229,7 @@ object * parse_literal(struct arrtok_iter * i){
 
 object * parse_array(struct arrtok_iter * i){
     binarg Args = {0, 0};
-    object * o = __bin_array(Args);
+    object * o = __bin_array(Args, 0);
     //eat [
     i->pos++;
     while(i->arr.tokens[i->pos].type != jscsbr){

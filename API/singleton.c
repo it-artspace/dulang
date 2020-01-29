@@ -143,7 +143,7 @@ char*   dump_object     (object*self){
     writer+= sprintf(writer, "{");
     for(int i = 0; i<s->shape->cap;++i){
         if(s->shape->fieldnames[i]){
-            writer+= sprintf(writer, "%s: ", s->shape->fieldnames[i]->content);
+            writer+= sprintf(writer, "\"%s\": ", s->shape->fieldnames[i]->content);
             object * member = s->f_values[i];
             if(member->type->dump){
                 char*localdump = member->type->dump(member);

@@ -1,6 +1,1 @@
-import "html.dul"
 
-fun page()
-    return html.document(){
-        0
-    }

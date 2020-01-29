@@ -49,6 +49,8 @@ view = object{
             hook_head += " on$0=\"$0$1()\"".format(event, id(this))
             hook_repr += "let $0$1 = $2\n".format(event, id(this), toJS(@hooks[event]))
         hook_repr += "</script>"
+        if hook_repr == "<script></script>"
+            hook_repr = ""
         for attr in .attrs
             attr_repr += "$0='$1'".format(attr, @attrs[attr])
         return "<$0 id=\"$4\" $5 $3 style=$1>$6 $2</$0>".format(@tag, style_repr, children_repr, attr_repr, id(this), hook_head, hook_repr)
