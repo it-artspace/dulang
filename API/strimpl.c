@@ -9,7 +9,7 @@
 #include "../api.h"
 #include <math.h>
 #define STRCAP 15
-#define EXPERIMENTAL_CONS 1
+#define EXPERIMENTAL_CONS 0
 object* str_len   (object* self, binarg Args, context * __){
     if(Args.a_passed > 0){
         fprintf(stderr, "expected 0 arguments in len method but %d passed", Args.a_passed);
