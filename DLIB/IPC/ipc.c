@@ -11,6 +11,9 @@
 #include <fcntl.h>
 #include "api.h"
 #include<sys/socket.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
 #include <netdb.h> /* struct hostent, gethostbyname */
 
@@ -37,12 +40,16 @@ void destroy_ipchannel(object*chan){
 
 METHOD_DECL(chwait){
     char rdbuf[4096];
+    dulnumber * numbytes = *Args.aptr;
+    
     dulipchannel* chan = (dulipchannel*)self;
     int r = 1;
     //DECREF(chan->rdbuf);
     chan->rdbuf = allocstr();
-    while(r){
+    int rbytes = 0;
+    while(rbytes < NumValOf(numbytes)){
         r = read(chan->readfd, rdbuf, 4096);
+        rbytes += r;
         rdbuf[r] = 0;
         dulstring * new_str = strfromchar(rdbuf);
         str_iadd(chan->rdbuf, new_str);
@@ -59,10 +66,11 @@ METHOD_DECL(chwrite){
     }
     dulipchannel * chan = (dulipchannel*)self;
     dulstring * s = *Args.aptr;
-    int wrpos;
+    int wrpos = 0;
     while(wrpos < s->len){
-        write(chan->writefd, s->content + wrpos, s->len - wrpos);
+        wrpos += write(chan->writefd, s->content + wrpos, s->len - wrpos);
     }
+    return 0;
 }
 
 
@@ -187,3 +195,59 @@ BIN_DECL(connect){
     chan->writefd = sockfd;
     return chan;
 }
+
+
+typedef struct{
+    ObHead
+    int servfd;
+} udsServ;
+
+
+
+METHOD_DECL(udsconnect){
+    udsServ * server = self;
+    int clfd = accept(server->servfd, 0, 0);
+    dulipchannel * chan = malloc(sizeof(dulipchannel));
+    chan->type = &ipchannel;
+    chan->refcnt = 0;
+    chan->readfd = clfd;
+    chan->writefd = clfd;
+    return chan;
+}
+
+bin_method connect_method = {
+    &BINTYPE,
+    1,
+    udsconnect
+};
+
+object* getUdsMethods(void){
+    static object * methods = 0;
+    if(!methods){
+        methods = new_ob();
+        ob_subscr_set(methods, strfromchar("connect"), &connect_method);
+    }
+    return methods;
+}
+struct obtype udsservtype = {
+    .get_methods = getUdsMethods
+};
+
+BIN_DECL(startUDS){
+    dulstring * name = *Args.aptr;
+    udsServ * newServ = malloc(sizeof(newServ));
+    newServ->refcnt = 0;
+    newServ->type = &udsservtype;
+    newServ->servfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    struct sockaddr_un server_sockaddr;
+    memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
+    server_sockaddr.sun_family = AF_UNIX;
+    strcpy(server_sockaddr.sun_path, name->content);
+    int len = sizeof(server_sockaddr);
+    unlink(name->content);
+    int rc = bind(newServ->servfd, (struct sockaddr *) &server_sockaddr, len);
+    rc = listen(newServ->servfd, 10);
+    return newServ;
+}
+
+

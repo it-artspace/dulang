@@ -195,7 +195,7 @@ ctx_exec:;
                     ctx->inst_pointer += _op->arg;
                     break;
                 }
-                if(b->type != &BOOLTYPE)
+                if(b->type == &BOOLTYPE)
                     if(!((dulbool*)b)->val)
                         ctx->inst_pointer += _op->arg;
                 goto ctx_exec;

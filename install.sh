@@ -5,5 +5,5 @@ make &> /dev/null
 cd DLIB
 cd JSON && make && cd ..
 cd fs && make && cd ..
-cd ipc && make && cd ..
+cd IPC && make && cd ..
 echo "dulang installed succesfully"
