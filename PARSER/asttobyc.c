@@ -425,6 +425,7 @@ struct op *  write_node(funcobject* writer, astnode*node){
         case BOOLLIT:
             do{
                 object* b = boolfromlexem(*(char**)node->val);
+                b->refcnt = 1;
                 add_literal(writer, b);
                 write_op(writer, load_static, writer->statcount - 1);
             }while(0);
