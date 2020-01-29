@@ -7,6 +7,7 @@
 //
 
 #include "../api.h"
+#include <stdlib.h>
 static shapeobject * root;
 
 void DulAPI_init(void){
@@ -50,6 +51,7 @@ void init_shapes(){
         root->children_count = 0;
         root->children_cap = 15;
         root->children = malloc(sizeof(*root->children)*15);
+        bzero(root->children, sizeof(*root->children)*15);
         root->len = 0;
         root->cap = 32;
         root->fieldnames = malloc(sizeof(dulstring*)*32);
@@ -78,6 +80,7 @@ int dulshape_transit(single_ob * obj, dulstring * prop){
     new_shape->children_count = 0;
     new_shape->children_cap = 15;
     new_shape->children = malloc(sizeof(*root->children)*15);
+    bzero(new_shape->children, sizeof(*root->children)*15);
     new_shape->fieldnames = malloc(sizeof(dulstring*)*dul2pow(parent->len, parent->cap));
     new_shape->cap = dul2pow(parent->len, parent->cap);
     bzero(new_shape->fieldnames, new_shape->cap * sizeof(object*));
