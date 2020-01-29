@@ -1,0 +1,6 @@
+t = time()
+for _ in range(10000000)
+	{
+		0
+	}()
+write time() - t
