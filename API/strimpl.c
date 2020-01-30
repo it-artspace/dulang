@@ -415,6 +415,7 @@ object*concatstr(object*left, object*right){
     dulstring*nstr = (dulstring*)dulalloc(sizeof(dulstring));
     nstr->type = &STRTYPE;
     nstr->refcnt = 0;
+    nstr->is_cons = 0;
     nstr->len = s_left->len + s_right->len;
     nstr->content = (char*)dulalloc(nstr->len + 1);
     memcpy(nstr->content, s_left->content, s_left->len);
