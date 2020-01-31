@@ -12,6 +12,8 @@
 #include "../debuginfo.h"
 #include <libgen.h>
 
+
+
 int nametable_lookup( funcobject* writer, char* name ){
     for(int i = 0; i<writer->namecount; ++i){
         if(strcmp(writer->varnames[i], name)==0)
@@ -387,18 +389,23 @@ struct op *  write_node(funcobject* writer, astnode*node){
             
             break;
         case SUBSCR:
+#if load_stat
             if(node->children[1]->type == STRLIT){
                 object * prop = strfromchar((char*)node->children[1]->val);
                 add_literal(writer, prop);
                 int prop_idx = writer->statcount - 1;
                 write_node(writer, node->children[0]);
                 write_op(writer, load_stat_subscr, prop_idx);
-            } else {
+            } else{
                 write_node(writer, node->children[1]);
                 write_node(writer, node->children[0]);
                 write_op(writer, _subscr_get, 0);
             }
-            
+#else
+            write_node(writer, node->children[1]);
+            write_node(writer, node->children[0]);
+            write_op(writer, _subscr_get, 0);
+#endif
             break;
         case DULRETURN:
             write_node(writer, node->children[0]);
